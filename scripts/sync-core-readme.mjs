@@ -10,6 +10,6 @@ const dest = path.join(repoRoot, "packages", "core", "README.md");
 const content = await fs.readFile(source, "utf8");
 await fs.writeFile(dest, content, "utf8");
 
-console.log(`synced README: ${path.relative(repoRoot, source)} -> ${path.relative(repoRoot, dest)}`);
-
-
+console.log(
+  `synced README: ${path.relative(repoRoot, source)} -> ${path.relative(repoRoot, dest)}`,
+);
