@@ -5,9 +5,9 @@
 
 Context engineering made easy: Vectorstores provides a unified interface for connecting data to your AI application. It supports ingestion of data from various sources, loading it into vector databases and querying it later on.
 
-It plays nicely with existing AI frameworks like Vercel AI SDK, see the [Vercel integration guide](https://www.vectorstores.org/integration/vercel) for more details.
+It plays nicely with existing AI frameworks like Vercel AI SDK, see the [Vercel integration guide](https://vectorstores.org/integration/vercel/) for more details.
 
-It's a based on a fork of [LLamaIndexTS](https://github.com/run-llama/LlamaIndexTS), so you can use it as a drop-in replacement for LLamaIndexTS in your existing projects. Compared to LLamaIndexTS, vectorstores is more lightweight as it just focuses on vector databases and provides a unified interface for working with them.
+It's based on a fork of [LLamaIndexTS](https://github.com/run-llama/LlamaIndexTS), so you can use it as a drop-in replacement for LLamaIndexTS in your existing projects. Compared to LamaIndexTS, vectorstores is more lightweight as it just focuses on vector databases and provides a unified interface for working with them.
 
 ## Compatibility
 
@@ -30,7 +30,7 @@ npm install @vectorstores/core
 
 ### Setup in Node.js, Deno, Bun, TypeScript...?
 
-See the docs: `https://vectorstores.org/getting_started/installation`
+See the docs: [Installation](https://vectorstores.org/getting_started/installation/)
 
 ### Your first (minimal) retrieval example
 
@@ -76,8 +76,8 @@ npm install @vectorstores/weaviate
 
 ## Examples (local + StackBlitz)
 
-- **Run locally**: `https://vectorstores.org/getting_started/examples`
-- **Try in your browser (StackBlitz)**: `https://stackblitz.com/github/marcusschiesser/vectorstores/tree/main/examples?file=README.md`
+- **Run locally**: [Examples](https://vectorstores.org/getting_started/examples/)
+- **Try in your browser**: [StackBlitz](https://stackblitz.com/github/marcusschiesser/vectorstores/tree/main/examples?file=README.md)
 
 ## Contributing
 
