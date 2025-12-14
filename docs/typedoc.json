@@ -1,17 +1,17 @@
 {
   "plugin": ["typedoc-plugin-markdown", "typedoc-plugin-merge-modules"],
+  "name": "API Reference",
   "entryPoints": [
-    "../../packages/{,**/}index.ts",
-    "../../packages/readers/src/*.ts"
+    "../packages/{,**/}index.ts",
+    "../packages/readers/src/*.ts"
   ],
   "exclude": [
-    "../../packages/autotool/**/src/index.ts",
     "**/node_modules/**",
     "**/dist/**",
     "**/test/**",
     "**/tests/**"
   ],
-  "tsconfig": "../../tsconfig.json",
+  "tsconfig": "./tsconfig.typedoc.json",
   "readme": "none",
   "sourceLinkTemplate": "https://github.com/marcusschiesser/vectorstores/blob/{gitRevision}/{path}#L{line}",
   "out": "./src/content/docs/api",

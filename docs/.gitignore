@@ -23,14 +23,4 @@ pnpm-debug.log*
 
 # built files
 .build
-docs-python/src/content/docs/cloud
-docs-python/src/content/docs/framework
-docs-python/src/content/docs/workflows
-docs-python/src/content/docs/examples
-docs-typescript/src/content/docs/cloud
-docs-typescript/src/content/docs/framework
-docs-typescript/src/content/docs/examples
-docs-typescript/src/content/docs/workflows
-public/python-api-reference
-public/typescript-api-reference
-public/cloud-api-reference
+src/content/docs/api

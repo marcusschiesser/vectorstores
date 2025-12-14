@@ -1,5 +1,6 @@
 // @ts-check
 
+import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
 import { defineConfig, passthroughImageService } from "astro/config";
@@ -17,6 +18,21 @@ export default defineConfig({
 		remarkPlugins: [remarkPackageInstall],
 	},
 	integrations: [
+		AutoImport({
+			imports: [
+				{
+					"@astrojs/starlight/components": [
+						"Card",
+						"CardGrid",
+						"LinkCard",
+						"Icon",
+						"Tabs",
+						"TabItem",
+						"Aside",
+					],
+				},
+			],
+		}),
 		starlight({
 			plugins: [starlightAutoSidebar()],
 			title: "vectorstores Documentation",
@@ -84,25 +100,15 @@ export default defineConfig({
 					autogenerate: { directory: "migration", collapsed: true },
 				},
 				{
+					label: "API Reference",
+					autogenerate: { directory: "api", collapsed: true },
+				},
+				{
 					slug: "more",
 				},
 			],
 		}),
-		AutoImport({
-			imports: [
-				{
-					"@astrojs/starlight/components": [
-						"Card",
-						"CardGrid",
-						"LinkCard",
-						"Icon",
-						"Tabs",
-						"TabItem",
-						"Aside",
-					],
-				},
-			],
-		}),
+		mdx(),
 		react(),
 	],
 	image: {

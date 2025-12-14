@@ -1,0 +1,30 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "rootDir": "..",
+    "baseUrl": ".",
+    "paths": {
+      "@vectorstores/*": [
+        "../packages/*/src/index.ts",
+        "../packages/providers/*/src/index.ts",
+        "../packages/providers/storage/*/src/index.ts",
+        "../packages/providers/retriever/*/src/index.ts",
+        "../packages/readers/*/src/index.ts",
+        "../packages/node-parser/*/src/index.ts",
+        "../packages/env/*/src/index.ts",
+        "../packages/core/*/src/index.ts"
+      ]
+    }
+  },
+  "include": ["../packages/**/*.ts"],
+  "exclude": [
+    "../**/node_modules/**",
+    "../**/dist/**",
+    "../**/test/**",
+    "../**/tests/**"
+  ]
+}
+
+

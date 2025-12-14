@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "api:generate": "rm -rf ./src/content/docs/api && typedoc --options typedoc.json && node ./scripts/postprocess-typedoc.mjs",
+    "build": "pnpm run api:generate && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
