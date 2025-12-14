@@ -17,11 +17,14 @@
     }
   },
   "files": [
-    "./dist"
+    "./dist",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "dev": "bunchee --watch",
-    "build": "bunchee"
+    "build": "bunchee",
+    "prepack": "node ../../scripts/sync-core-readme.mjs"
   },
   "repository": {
     "type": "git",

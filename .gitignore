@@ -51,3 +51,6 @@ playwright/.cache/
 
 # generated API
 packages/cloud/src/client
+
+# copied README files
+packages/core/README.md
