@@ -7,6 +7,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 import AutoImport from "astro-auto-import";
 import path from "path";
 import starlightAutoSidebar from "starlight-auto-sidebar";
+import remarkInclude from "./src/plugins/remark-include.mjs";
 import remarkPackageInstall from "./src/plugins/remark-package-install.mjs";
 
 // https://astro.build/config
@@ -15,7 +16,7 @@ export default defineConfig({
 	base: "/",
 	outDir: path.resolve("../dist/"),
 	markdown: {
-		remarkPlugins: [remarkPackageInstall],
+		remarkPlugins: [remarkInclude, remarkPackageInstall],
 	},
 	integrations: [
 		AutoImport({
@@ -87,10 +88,7 @@ export default defineConfig({
 					label: "Integration",
 					autogenerate: { directory: "integration", collapsed: true },
 				},
-				{
-					label: "Tutorials",
-					autogenerate: { directory: "tutorials", collapsed: true },
-				},
+			
 				{
 					label: "Modules",
 					autogenerate: { directory: "modules", collapsed: true },

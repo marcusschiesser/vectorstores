@@ -77,7 +77,7 @@ async function main() {
 
   // Query the index
   const response = await retriever.retrieve({
-    query: "What is the main topic?",
+    query: "What is the machine learning?",
   });
 
   // Display results
@@ -111,7 +111,7 @@ You should expect output something like:
 ```
 Found 1 result(s):
 
-1. Score: 85.32%
+1. Score: 67.32%
    Text: Machine learning is a subset of artificial intelligence that focuses on algorithms 
 that can learn from data. These algorithms build mathemat...
 ```
@@ -120,6 +120,9 @@ This example demonstrates the core workflow of vectorstores:
 1. **Ingestion**: Converting your text into `Document` objects
 2. **Indexing**: Automatically splitting text into chunks and generating embeddings
 3. **Retrieval**: Querying the index to find semantically similar content
+
+>Note: This example is intentionally simple to get you started quickly. Using vector databases makes more sense with a lot of large documents that don't fit into the context window of an LLM at once.
+
 
 ## What's Next?
 
