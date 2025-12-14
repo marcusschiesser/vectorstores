@@ -30,12 +30,12 @@ vectorstores help you prepare the knowledge base with a suite of data connectors
 
 ![](/_static/concepts/indexing.jpg)
 
-[**Data Loaders**](/framework/modules/data/readers):
+[**Data Loaders**](/modules/data/readers):
 A data connector (i.e. `Reader`) ingest data from different data sources and data formats into a simple `Document` representation (text and simple metadata).
 
-[**Documents / Nodes**](/framework/modules/data): A `Document` is a generic container around any data source - for instance, a PDF, an API output, or retrieved data from a database. A `Node` is the atomic unit of data in vectorstores and represents a "chunk" of a source `Document`. It's a rich representation that includes metadata and relationships (to other nodes) to enable accurate and expressive retrieval operations.
+[**Documents / Nodes**](/modules/data): A `Document` is a generic container around any data source - for instance, a PDF, an API output, or retrieved data from a database. A `Node` is the atomic unit of data in vectorstores and represents a "chunk" of a source `Document`. It's a rich representation that includes metadata and relationships (to other nodes) to enable accurate and expressive retrieval operations.
 
-[**Data Indexes**](/framework/modules/data/data_index):
+[**Data Indexes**](/modules/data/data_index):
 Once you've ingested your data, vectorstores helps you index data into a format that's easy to retrieve.
 
 Under the hood, vectorstores parses the raw documents into intermediate representations, calculates vector embeddings, and stores your data in-memory or to disk.
@@ -57,7 +57,7 @@ These building blocks can be customized to reflect ranking preferences, as well 
 
 #### Building Blocks
 
-[**Retrievers**](/framework/modules/rag/retriever):
+[**Retrievers**](/modules/rag/retriever):
 A retriever defines how to efficiently retrieve relevant context from a knowledge base (i.e. index) when given a query.
 The specific retrieval logic differs for different indices, the most popular being dense retrieval against a vector index.
 

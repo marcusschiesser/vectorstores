@@ -13,7 +13,7 @@
   ],
   "tsconfig": "../../tsconfig.json",
   "readme": "none",
-  "sourceLinkTemplate": "https://github.com/schiesser/vectorstores/blob/{gitRevision}/{path}#L{line}",
+  "sourceLinkTemplate": "https://github.com/marcusschiesser/vectorstores/blob/{gitRevision}/{path}#L{line}",
   "out": "./src/content/docs/api",
   "outputFileStrategy": "members",
   "categorizeByGroup": true,

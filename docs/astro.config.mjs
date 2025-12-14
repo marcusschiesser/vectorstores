@@ -1,27 +1,28 @@
 // @ts-check
-import { defineConfig, passthroughImageService } from 'astro/config';
-import starlight from '@astrojs/starlight';
-import react from '@astrojs/react';
-import AutoImport from 'astro-auto-import';
-import starlightAutoSidebar from 'starlight-auto-sidebar'
-import path from 'path';
-import remarkPackageInstall from './src/plugins/remark-package-install.mjs';
+
+import react from "@astrojs/react";
+import starlight from "@astrojs/starlight";
+import { defineConfig, passthroughImageService } from "astro/config";
+import AutoImport from "astro-auto-import";
+import path from "path";
+import starlightAutoSidebar from "starlight-auto-sidebar";
+import remarkPackageInstall from "./src/plugins/remark-package-install.mjs";
 
 // https://astro.build/config
 export default defineConfig({
 	site: "https://vectorstores.dev",
 	base: "/",
-	outDir: path.resolve('../dist/'),
+	outDir: path.resolve("../dist/"),
 	markdown: {
 		remarkPlugins: [remarkPackageInstall],
 	},
 	integrations: [
 		starlight({
 			plugins: [starlightAutoSidebar()],
-			title: 'vectorstores Documentation',
+			title: "vectorstores Documentation",
 			head: [
 				{
-					tag: 'script',
+					tag: "script",
 					content: `
 					(function (w, d, s, l, i) {
 					  w[l] = w[l] || [];
@@ -36,7 +37,7 @@ export default defineConfig({
 				  `,
 				},
 				{
-					tag: 'script',
+					tag: "script",
 					content: `
 						document.addEventListener("DOMContentLoaded", function () {
 							var script = document.createElement("script");
@@ -57,39 +58,58 @@ export default defineConfig({
 							script.async = true;
 							document.head.appendChild(script);
 						});
-					`
-				}
+					`,
+				},
 			],
 			social: [
 				{
-					icon: 'github',
-					label: 'GitHub',
-					href: 'https://github.com/marcusschiesser/vectorstores'
-				}
+					icon: "github",
+					label: "GitHub",
+					href: "https://github.com/marcusschiesser/vectorstores",
+				},
 			],
 			logo: {
-				light: './src/assets/vectorstores-dark.svg',
-				dark: './src/assets/vectorstores-light.svg',
+				light: "./src/assets/vectorstores-dark.svg",
+				dark: "./src/assets/vectorstores-light.svg",
 				replacesTitle: true,
 			},
-			favicon: '/logo-dark.png',
+			favicon: "/logo-dark.png",
 			components: {
-				SiteTitle: './src/components/SiteTitle.astro',
-				Header: './src/components/Header.astro',
+				SiteTitle: "./src/components/SiteTitle.astro",
+				Header: "./src/components/Header.astro",
 			},
 			sidebar: [
 				{
-					label: 'Framework',
-					autogenerate: { directory: 'framework', collapsed: true },
+					label: "Framework",
+					autogenerate: { directory: ".", collapsed: true },
 				},
-				
 			],
 		}),
 		AutoImport({
 			imports: [
 				{
-					'@icons-pack/react-simple-icons': ['SiBun', 'SiCloudflareworkers', 'SiDeno', 'SiNodedotjs', 'SiTypescript', 'SiVite', 'SiNextdotjs', 'SiDiscord', 'SiGithub', 'SiNpm', 'SiX'],
-					'@astrojs/starlight/components': ['Card', 'CardGrid', 'LinkCard', 'Icon', 'Tabs', 'TabItem', 'Aside']
+					"@icons-pack/react-simple-icons": [
+						"SiBun",
+						"SiCloudflareworkers",
+						"SiDeno",
+						"SiNodedotjs",
+						"SiTypescript",
+						"SiVite",
+						"SiNextdotjs",
+						"SiDiscord",
+						"SiGithub",
+						"SiNpm",
+						"SiX",
+					],
+					"@astrojs/starlight/components": [
+						"Card",
+						"CardGrid",
+						"LinkCard",
+						"Icon",
+						"Tabs",
+						"TabItem",
+						"Aside",
+					],
 				},
 			],
 		}),
@@ -97,5 +117,5 @@ export default defineConfig({
 	],
 	image: {
 		service: passthroughImageService(),
-	}
+	},
 });

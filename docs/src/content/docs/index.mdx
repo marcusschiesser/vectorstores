@@ -15,17 +15,17 @@ Built for modern JavaScript runtimes like **Node.js**, **Deno**, **Bun**, **Clou
   <LinkCard
     title="Install + run your first example"
     description="Set up vectorstores, configure embeddings, and run a minimal retrieval example."
-    href="/framework/getting_started/installation"
+    href="/getting_started/installation"
   />
   <LinkCard
     title="Agentic RAG with Vercel AI SDK"
     description="Build an agentic RAG app with tool calling and streaming."
-    href="/framework/integration/vercel"
+    href="/integration/vercel"
   />
   <LinkCard
     title="Browse code examples"
     description="Run the examples locally or try them online in StackBlitz."
-    href="/framework/getting_started/examples"
+    href="/getting_started/examples"
   />
 </CardGrid>
 
@@ -39,14 +39,14 @@ The most common pattern is **Retrieval-Augmented Generation (RAG)**:
 - **Indexing stage**: ingest raw inputs, chunk them into `Node`s, and compute embeddings.
 - **Querying stage**: retrieve the most relevant `Node`s for a query, optionally rerank them, then generate an answer grounded in that context.
 
-Learn the mental model in the [RAG concepts guide](/framework/tutorials/rag/concepts).
+Learn the mental model in the [RAG concepts guide](/tutorials/rag/concepts).
 
 ## Key building blocks
 
-- **Documents & Nodes**: your data as `Document`s, split into retrievable `Node`s. See [Documents and Nodes](/framework/modules/data).
-- **Ingestion pipelines**: configurable transformations (splitters, embeddings). See [Ingestion Pipeline](/framework/modules/data/ingestion_pipeline).
-- **Retrievers**: fetch relevant `Node`s for a query. See [Retriever](/framework/modules/rag/retriever).
-- **Postprocessors**: rerank, filter, or otherwise transform retrieved nodes. Example: [Cohere Reranker](/framework/modules/rag/node_postprocessors/cohere_reranker).
+- **Documents & Nodes**: your data as `Document`s, split into retrievable `Node`s. See [Documents and Nodes](/modules/data).
+- **Ingestion pipelines**: configurable transformations (splitters, embeddings). See [Ingestion Pipeline](/modules/data/ingestion_pipeline).
+- **Retrievers**: fetch relevant `Node`s for a query. See [Retriever](/modules/rag/retriever).
+- **Postprocessors**: rerank, filter, or otherwise transform retrieved nodes. Example: [Cohere Reranker](/modules/rag/node_postprocessors/cohere_reranker).
 
 ## Try it in your browser
 
@@ -67,7 +67,7 @@ The fastest way to get started is in StackBlitz—no local setup required:
 
 ## More resources
 
-- **Migrating from LlamaIndexTS?** See [Migrating from LlamaIndex to vectorstores](/framework/migration/llamaindex-to-vectorstores).
+- **Migrating from LlamaIndexTS?** See [Migrating from LlamaIndex to vectorstores](/migration/llamaindex-to-vectorstores).
 
 ---
 
