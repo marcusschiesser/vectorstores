@@ -1,5 +1,5 @@
 ---
-title: Transformations
+title: Custom Transformations
 ---
 
 A transformation is something that takes a list of nodes as an input, and returns a list of nodes. Each component that implements the Transformation class has both a `transform` definition responsible for transforming the nodes.
@@ -7,32 +7,7 @@ A transformation is something that takes a list of nodes as an input, and return
 Currently, the following components are Transformation objects:
 
 - [SentenceSplitter](/framework/modules/data/ingestion_pipeline/transformations/node-parser)
-- [MetadataExtractor](/framework/modules/data/ingestion_pipeline/transformations/metadata_extraction)
 - [Embeddings](/framework/modules/models/embeddings)
-
-## Usage Pattern
-
-While transformations are best used with with an IngestionPipeline, they can also be used directly.
-
-```ts
-import { SentenceSplitter, TitleExtractor, Document } from "@vectorstores/core";
-
-async function main() {
-  let nodes = new SentenceSplitter().getNodesFromDocuments([
-    new Document({ text: "I am 10 years old. John is 20 years old." }),
-  ]);
-
-  const titleExtractor = new TitleExtractor();
-
-  nodes = await titleExtractor.transform(nodes);
-
-  for (const node of nodes) {
-    console.log(node.getContent(MetadataMode.NONE));
-  }
-}
-
-main().catch(console.error);
-```
 
 ## Custom Transformations
 

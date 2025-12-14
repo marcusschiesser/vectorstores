@@ -16,26 +16,6 @@ And then the package for the vector database you want to use, e.g. for Qdrant us
 npm i @vectorstores/qdrant
 ```
 
-## TypeScript Configuration
-
-vectorstores is built with TypeScript and provides excellent type safety. Add these settings to your `tsconfig.json`:
-
-```json5
-{
-  "compilerOptions": {
-    // Essential for module resolution
-    "moduleResolution": "bundler", // or "nodenext" | "node16" | "node"
-    
-    // Required for Web Stream API support
-    "lib": ["DOM.AsyncIterable"],
-    
-    // Recommended for better compatibility
-    "target": "es2020",
-    "module": "esnext"
-  }
-}
-```
-
 ## Your first ingestion example
 
 ### Set up
@@ -144,12 +124,7 @@ This example demonstrates the core workflow of vectorstores:
 ## What's Next?
 
 <CardGrid>
-  <Card
-    title="Learn vectorstores"
-    description="Learn how to use vectorstores by starting with one of our tutorials."
-    href="/framework/tutorials/basic_agent"
-  />
-  <Card
+  <LinkCard
     title="Show me code examples"
     description="Explore code examples using vectorstores."
     href="/framework/getting_started/examples"

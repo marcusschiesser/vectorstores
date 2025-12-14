@@ -6,63 +6,81 @@ The Cohere Reranker is a postprocessor that uses the Cohere API to rerank the re
 
 ## Setup
 
-Firstly, you will need to install the `llamaindex` package.
+Install the required packages:
 
 ```package-install
-npm i llamaindex @vectorstores/cohere @vectorstores/openai
+npm i @vectorstores/core @vectorstores/cohere openai
 ```
 
-Now, you will need to sign up for an API key at [Cohere](https://cohere.ai/). Once you have your API key you can import the necessary modules and create a new instance of the `CohereRerank` class.
+You'll need:
+
+- `OPENAI_API_KEY` for generating embeddings (used to build the index)
+- `COHERE_API_KEY` for reranking
 
 ```ts
-import { OpenAI } from "@vectorstores/openai";
 import { CohereRerank } from "@vectorstores/cohere";
-import { Document, Settings, VectorStoreIndex } from "@vectorstores/core";
+import { Document, MetadataMode, Settings, VectorStoreIndex } from "@vectorstores/core";
+import { OpenAI } from "openai";
 ```
 
-## Load and index documents
+## Load and index documents, then rerank retrieval results
 
-For this example, we will use a single document. In a real-world scenario, you would have multiple documents to index.
-
-```ts
-const document = new Document({ text: essay, id_: "essay" });
-
-Settings.llm = new OpenAI({ model: "gpt-3.5-turbo", temperature: 0.1 });
-
-const index = await VectorStoreIndex.fromDocuments([document]);
-```
-
-## Increase similarity topK to retrieve more results
-
-The default value for `similarityTopK` is 2. This means that only the most similar document will be returned. To retrieve more results, you can increase the value of `similarityTopK`.
+This example follows the same flow as `examples/retrieval/rerankers/CohereReranker.ts`: retrieve nodes normally, then rerank them with Cohere.
 
 ```ts
-const retriever = index.asRetriever({
-  similarityTopK: 5,
-});
-```
+async function main() {
+  // ---- embeddings (required to build VectorStoreIndex)
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  Settings.embedFunc = async (input: string[]): Promise<number[][]> => {
+    const { data } = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input,
+    });
+    return data.map((d) => d.embedding);
+  };
 
-## Create a new instance of the CohereRerank class
+  // ---- load and index
+  const essay =
+    "Paul Graham is the cofounder of Y Combinator. He grew up in Pittsburgh...";
+  const document = new Document({ text: essay, id_: "essay" });
+  const index = await VectorStoreIndex.fromDocuments([document]);
 
-Then you can create a new instance of the `CohereRerank` class and pass in your API key and the number of results you want to return.
+  // ---- cohere reranker
+  const cohereRerank = new CohereRerank({
+    apiKey: process.env.COHERE_API_KEY,
+    topN: 5,
+    model: "rerank-v3.5",
+  });
 
-```ts
-const nodePostprocessor = new CohereRerank({
-  apiKey: "<COHERE_API_KEY>",
-  topN: 4,
-});
-```
+  // ---- retrieve more than the default (2)
+  const retriever = index.asRetriever({
+    similarityTopK: 5,
+  });
 
-## Create a query engine with the retriever and node postprocessor
+  const query = "What did the author do growing up?";
 
-```ts
-const queryEngine = index.asQueryEngine({
-  retriever,
-  nodePostprocessors: [nodePostprocessor],
-});
+  // Retrieve nodes
+  const nodes = await retriever.retrieve({ query });
 
-// log the response
-const response = await queryEngine.query("Where did the author grown up?");
+  // Apply Cohere reranking
+  const rerankedNodes = await cohereRerank.postprocessNodes(nodes, query);
+
+  console.log("With Cohere reranking:");
+  for (const r of rerankedNodes) {
+    console.log("Score:", r.score ?? "-");
+    console.log(r.node.getContent(MetadataMode.NONE));
+    console.log("---");
+  }
+
+  console.log("Without Cohere reranking:");
+  for (const r of nodes) {
+    console.log("Score:", r.score ?? "-");
+    console.log(r.node.getContent(MetadataMode.NONE));
+    console.log("---");
+  }
+}
+
+main().catch(console.error);
 ```
 
 ## API Reference

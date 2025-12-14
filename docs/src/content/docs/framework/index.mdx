@@ -1,118 +1,79 @@
 ---
 title: Welcome to vectorstores
-description: vectorstores is the leading framework for utilizing context engineering to build LLM applications in JavaScript and TypeScript.
+description: The TypeScript framework for building AI apps using vector stores
 ---
 
-vectorstores is a **framework for utilizing context engineering to build generative AI applications** with large language models. From rapid-prototyping RAG chatbots to deploying multi-agent workflows in production, LlamaIndex gives you everything you need — all in idiomatic TypeScript.
+vectorstores is a **TypeScript framework for building AI applications on top of your data**.
+It's an abstract layer on top of vector stores, providing a unified interface for working with them.
+It gives you composable building blocks for **ingestion** and **retrieval**, so you can ship production-grade AI applications getting their context from your data.
 
-Built for modern JavaScript runtimes like <SiNodedotjs className="inline" color="#5FA04E" /> **Node.js**, <SiDeno className="inline" color="#70FFAF" /> **Deno**, <SiBun className="inline" /> **Bun**, <SiCloudflareworkers className="inline" color="#F38020" /> **Cloudflare Workers**, and more.
+Built for modern JavaScript runtimes like **Node.js**, **Deno**, **Bun**, **Cloudflare Workers**, and more.
 
-<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 my-6">
-  <a href="#introduction" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline">
-    <h3 className="mb-1 text-lg font-semibold underline">Introduction</h3>
-    <p className="text-sm text-gray-400 no-underline">Context engineering, agents &amp; workflows — what do they mean?</p>
-  </a>
+## Start here
 
-  <a href="#use-cases" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline">
-    <h3 className="mb-1 text-lg font-semibold underline">Use cases</h3>
-    <p className="text-sm text-gray-400 no-underline">See what you can build with vectorstores.</p>
-  </a>
+<CardGrid>
+  <LinkCard
+    title="Install + run your first example"
+    description="Set up vectorstores, configure embeddings, and run a minimal retrieval example."
+    href="/framework/getting_started/installation"
+  />
+  <LinkCard
+    title="Agentic RAG with Vercel AI SDK"
+    description="Build an agentic RAG app with tool calling and streaming."
+    href="/framework/integration/vercel"
+  />
+  <LinkCard
+    title="Browse code examples"
+    description="Run the examples locally or try them online in StackBlitz."
+    href="/framework/getting_started/examples"
+  />
+</CardGrid>
 
-  <a href="#getting-started" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline">
-    <h3 className="mb-1 text-lg font-semibold underline">Getting started</h3>
-    <p className="text-sm text-gray-400 no-underline">Your first app in 5 lines of code.</p>
-  </a>
+## What is “context engineering”?
 
-  <a href="https://docs.cloud.llamaindex.ai/" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline" target="_blank" rel="noopener noreferrer">
-    <h3 className="mb-1 text-lg font-semibold underline">LlamaCloud</h3>
-    <p className="text-sm text-gray-400 no-underline">Managed parsing, extraction &amp; retrieval pipelines.</p>
-  </a>
+LLMs are powerful, but they don’t know your private or domain data by default.
+**Context engineering** is the practice of selecting the right slices of your data and injecting them into the prompt at the right time.
 
-  <a href="#community" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline">
-    <h3 className="mb-1 text-lg font-semibold underline">Community</h3>
-    <p className="text-sm text-gray-400 no-underline">Join thousands of builders on Discord, Twitter, and more.</p>
-  </a>
+The most common pattern is **Retrieval-Augmented Generation (RAG)**:
 
-  <a href="#related-projects" className="block rounded-lg border border-gray-600/40 p-4 hover:border-gray-400 hover:bg-gray-700/20 no-underline">
-    <h3 className="mb-1 text-lg font-semibold underline">Related projects</h3>
-    <p className="text-sm text-gray-400 no-underline">Connectors, demos &amp; starter kits.</p>
-  </a>
-</div>
+- **Indexing stage**: ingest raw inputs, chunk them into `Node`s, and compute embeddings.
+- **Querying stage**: retrieve the most relevant `Node`s for a query, optionally rerank them, then generate an answer grounded in that context.
 
-## Introduction
+Learn the mental model in the [RAG concepts guide](/framework/tutorials/rag/concepts).
 
-### What are agents?
+## Key building blocks
 
-[Agents](/framework/tutorials/agents/1_setup) are LLM-powered assistants that can reason, use external tools, and take actions to accomplish tasks such as research, data extraction, and automation. 
-vectorstores provides foundational building blocks for creating and orchestrating these agents.
+- **Documents & Nodes**: your data as `Document`s, split into retrievable `Node`s. See [Documents and Nodes](/framework/modules/data).
+- **Ingestion pipelines**: configurable transformations (splitters, embeddings). See [Ingestion Pipeline](/framework/modules/data/ingestion_pipeline).
+- **Retrievers**: fetch relevant `Node`s for a query. See [Retriever](/framework/modules/rag/retriever).
+- **Postprocessors**: rerank, filter, or otherwise transform retrieved nodes. Example: [Cohere Reranker](/framework/modules/rag/node_postprocessors/cohere_reranker).
 
-### What are workflows?
+## Try it in your browser
 
-[Workflows](/framework/tutorials/workflows) are multi-step, event-driven processes that combine agents, data connectors, and other tools to solve complex problems. 
-With vectorstores you can chain together retrieval, generation, and tool-calling steps and then deploy the entire pipeline as a microservice.
+The fastest way to get started is in StackBlitz—no local setup required:
 
-### What is context engineering?
+<a
+  href="https://stackblitz.com/github/marcusschiesser/vectorstores/tree/main/examples?file=README.md"
+  target="_blank"
+  rel="noopener noreferrer"
+  style="display: block; margin-top: 1rem;"
+>
+  <img
+    src="/_static/getting_started/stackblitz-screenshot.png"
+    alt="StackBlitz IDE showing vectorstores examples"
+    style="width: 100%; max-width: 100%; border-radius: 0.5rem; border: 1px solid var(--sl-color-gray-4); cursor: pointer;"
+  />
+</a>
 
-LLMs come pre-trained on vast public corpora, but not on **your** private or domain-specific data. 
-Context engineering bridges that gap by injecting the right pieces of your data into the LLM prompt at the right time. 
-The most popular example is [Retrieval-Augmented Generation (RAG)](/framework/getting_started/concepts), but the same idea powers agent memory, evaluation, extraction, summarisation, and more.
+## More resources
 
-vectorstores gives you:
-
-- **Data connectors** to ingest from APIs, files, SQL, and dozens more sources.
-- **Indexes & retrievers** to store and retrieve your data for LLM consumption.
-- **Agents and Engines** to query and use chat+reasoning interfaces over your data.
-- **Workflows** for fine-grained orchestration of your data and LLM-powered agents.
-- **Observability** integrations so you can iterate with confidence.
-
-You can learn more about these concepts in our [concepts guide](/framework/getting_started/concepts).
-
-## Use cases
-
-Popular scenarios include:
-
-- [LLM-Powered Agents](/framework/tutorials/agents/1_setup)
-- [Indexing and Retrieval](/framework/tutorials/rag)
-- [Extracting Structured Data](/framework/tutorials/structured_data_extraction)
-- [Custom Orchestration with Workflows](/framework/tutorials/workflows)
-
-## Getting started
-
-The fastest way to get started is in StackBlitz below — no local setup required:
-
-<iframe
-  className="w-full h-[440px]"
-  aria-label="vectorstores Starter"
-  aria-description="Interactive starter for vectorstores"
-  src="https://stackblitz.com/github/marcusschiesser/vectorstores/tree/main/examples/retrieval?embed=1&file=starter.ts"
-/>
-
-Want to learn more? We have several tutorials to get you started:
-
-- [Installation + Runtime Guide](/framework/getting_started/installation)
-- [Create your first agent](/framework/tutorials/agents/1_setup)
-- [Learn how to index data and chat with it](/framework/tutorials/rag)
-- [Learn how to write your own workflows and agents](/framework/tutorials/workflows)
-
----
-
-## LlamaCloud
-
-Need an end-to-end managed pipeline? Check out **[LlamaCloud](https://cloud.llamaindex.ai/)**: best-in-class document parsing (LlamaParse), extraction (LlamaExtract), and indexing services with generous free tiers.
+- **Migrating from LlamaIndexTS?** See [Migrating from LlamaIndex to vectorstores](/framework/migration/llamaindex-to-vectorstores).
 
 ---
 
 ## Community
 
-- [Twitter](https://twitter.com/llama_index)
-- [Discord](https://discord.gg/dGcwcsnxhU)
-- [LinkedIn](https://www.linkedin.com/company/llamaindex/)
+- [Twitter](https://twitter.com/MarcusSchiesser)
+- [GitHub](https://github.com/marcusschiesser/vectorstores)
 
 We 💜 contributors! View our [contributing guide](https://github.com/marcusschiesser/vectorstores/blob/main/CONTRIBUTING.md) to get started.
-
-## Related projects
-
-- [Python framework GitHub](https://github.com/run-llama/llama_index)
-- [Python docs](https://docs.llamaindex.ai/)
-- [create-llama](https://www.npmjs.com/package/create-llama) — scaffold a new project in seconds!
-- [UI Components](https://ui.llamaindex.ai/) — build chat applications with our Next.js components.

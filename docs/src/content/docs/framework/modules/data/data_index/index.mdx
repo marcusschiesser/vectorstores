@@ -2,12 +2,7 @@
 title: Index
 ---
 
-An index is the basic container for organizing your data. Besides managed indexes using [LlamaCloud](/framework/modules/data/data_index/managed), vectorstores supports three indexes:
-
-
-- `VectorStoreIndex` - will send the top-k `Node`s to the LLM when generating a response. The default top-k is 2.
-- `SummaryIndex` - will send every `Node` in the index to the LLM in order to generate a response
-- `KeywordTableIndex` extracts and provides keywords from `Node`s to the LLM
+An `VectorStoreIndex` is the basic container for organizing your data. It retrieves the top-k `Node`s that can be send to an LLM for generating a response. The default top-k is 2.
 
 ```typescript
 import { Document, VectorStoreIndex } from "@vectorstores/core";
@@ -19,6 +14,4 @@ const index = await VectorStoreIndex.fromDocuments([document]);
 
 ## API Reference
 
-- [SummaryIndex](/framework-api-reference/classes/summaryindex/)
 - [VectorStoreIndex](/framework-api-reference/classes/vectorstoreindex/)
-- [KeywordTableIndex](/framework-api-reference/classes/keywordtableindex/)

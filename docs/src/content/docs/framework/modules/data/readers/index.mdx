@@ -102,20 +102,6 @@ export async function getDocuments() {
 You'll find a complete example with vectorstores here: https://github.com/run-llama/create_llama_projects/tree/main/nextjs-edge-llamaparse
 
 
-## Load file natively using Node.js Customization Hooks
-
-We have a helper utility to allow you to import a file in Node.js script.
-
-```shell 
-node --import @vectorstores/readers/node ./script.js
-```
-
-```ts
-import csv from './path/to/data.csv';
-
-const text = csv.getText()
-```
-
 ## API Reference
 
 - [SimpleDirectoryReader](/framework-api-reference/classes/simpledirectoryreader/)

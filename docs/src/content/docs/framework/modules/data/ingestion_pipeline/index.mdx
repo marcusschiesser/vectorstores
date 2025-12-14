@@ -8,7 +8,7 @@ These `Transformations` are applied to your input data, and the resulting nodes 
 ## Installation
 
 ```package-install
-npm i llamaindex @vectorstores/openai @vectorstores/qdrant
+npm add @vectorstores/core @vectorstores/qdrant openai
 ```
 
 ## Usage Pattern
@@ -17,37 +17,65 @@ The simplest usage is to instantiate an IngestionPipeline like so:
 
 ```ts
 import fs from "node:fs/promises";
-import { OpenAI, OpenAIEmbedding } from "@vectorstores/openai";
 import {
+  BaseEmbedding,
   Document,
   IngestionPipeline,
   MetadataMode,
-  TitleExtractor,
   SentenceSplitter,
+  Settings,
+  VectorStoreIndex,
 } from "@vectorstores/core";
+import { OpenAI } from "openai";
 
 async function main() {
-  // Load essay from abramov.txt in Node
-  const path = "node_modules/llamaindex/examples/abramov.txt";
+  // Configure embeddings function for BaseEmbedding()
+  const openai = new OpenAI();
+  Settings.embedFunc = async (input: string[]): Promise<number[][]> => {
+    const { data } = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input,
+    });
+    return data.map((d) => d.embedding);
+  };
 
-  const essay = await fs.readFile(path, "utf-8");
+  // Load essay from abramov.txt in Node
+  const filePath = fileURLToPath(
+    new URL("./data/abramov.txt", import.meta.url),
+  );
+  const essay = await fs.readFile(filePath, "utf-8");
 
   // Create Document object with essay
-  const document = new Document({ text: essay, id_: path });
+  const document = new Document({ text: essay, id_: filePath });
   const pipeline = new IngestionPipeline({
     transformations: [
       new SentenceSplitter({ chunkSize: 1024, chunkOverlap: 20 }),
-      new TitleExtractor(),
-      new OpenAIEmbedding(),
+      new BaseEmbedding(),
     ],
   });
 
-  // run the pipeline
+  console.time("Pipeline Run Time");
+
+  // Run the pipeline
   const nodes = await pipeline.run({ documents: [document] });
 
-  // print out the result of the pipeline run
-  for (const node of nodes) {
-    console.log(node.getContent(MetadataMode.NONE));
+  console.timeEnd("Pipeline Run Time");
+
+  // Initialize the VectorStoreIndex from nodes
+  const index = await VectorStoreIndex.init({ nodes });
+
+  // Retrieve from the index
+  const retriever = index.asRetriever();
+
+  const response = await retriever.retrieve({
+    query: "What did the author do in college?",
+  });
+
+  // Output response
+  for (const result of response) {
+    console.log("Score:", result.score ?? "-");
+    console.log(result.node.getContent(MetadataMode.NONE));
+    console.log("---");
   }
 }
 
@@ -63,42 +91,52 @@ Then, you can construct an index from that vector store later on.
 ```ts
 import fs from "node:fs/promises";
 
-import { OpenAIEmbedding } from "@vectorstores/openai";
 import { QdrantVectorStore } from "@vectorstores/qdrant";
 import {
+  BaseEmbedding,
   Document,
   IngestionPipeline,
-  MetadataMode,
-  TitleExtractor,
   SentenceSplitter,
+  Settings,
   VectorStoreIndex,
 } from "@vectorstores/core";
+import { OpenAI } from "openai";
 
 async function main() {
-  // Load essay from abramov.txt in Node
-  const path = "node_modules/llamaindex/examples/abramov.txt";
+  // Configure embeddings for BaseEmbedding()
+  const openai = new OpenAI();
+  Settings.embedFunc = async (input: string[]): Promise<number[][]> => {
+    const { data } = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input,
+    });
+    return data.map((d) => d.embedding);
+  };
 
-  const essay = await fs.readFile(path, "utf-8");
+  // Load essay from abramov.txt in Node
+  const filePath = fileURLToPath(
+    new URL("./data/abramov.txt", import.meta.url),
+  );
+  const essay = await fs.readFile(filePath, "utf-8");
 
   const vectorStore = new QdrantVectorStore({
     host: "http://localhost:6333",
   });
 
   // Create Document object with essay
-  const document = new Document({ text: essay, id_: path });
+  const document = new Document({ text: essay, id_: filePath });
   const pipeline = new IngestionPipeline({
     transformations: [
       new SentenceSplitter({ chunkSize: 1024, chunkOverlap: 20 }),
-      new TitleExtractor(),
-      new OpenAIEmbedding(),
+      new BaseEmbedding(),
     ],
     vectorStore,
   });
 
   // run the pipeline
-  const nodes = await pipeline.run({ documents: [document] });
+  await pipeline.run({ documents: [document] });
 
-  // create an index
+  // create an index for retrieval later on 
   const index = VectorStoreIndex.fromVectorStore(vectorStore);
 }
 

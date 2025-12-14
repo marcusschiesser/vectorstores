@@ -2,15 +2,9 @@
 title: Retriever
 ---
 
-A retriever in LlamaIndex is what is used to fetch `Node`s from an index using a query string.
+A retriever in vectorstores is what is used to fetch `Node`s from an index using a query string.
 
 - [VectorIndexRetriever](/framework-api-reference/classes/vectorindexretriever/) will fetch the top-k most similar nodes. Ideal for dense retrieval to find most relevant nodes.
-- [SummaryIndexRetriever](/framework-api-reference/classes/summaryindexretriever/) will fetch all nodes no matter the query. Ideal when complete context is necessary, e.g. analyzing large datasets.
-- [SummaryIndexLLMRetriever](/framework-api-reference/classes/summaryindexllmretriever/) utilizes an LLM to score and filter nodes based on relevancy to the query.
-- [KeywordTableLLMRetriever](/framework-api-reference/classes/keywordtablellmretriever/) uses an LLM to extract keywords from the query and retrieve relevant nodes based on keyword matches.
-- [KeywordTableSimpleRetriever](/framework-api-reference/classes/keywordtablesimpleretriever/) uses a basic frequency-based approach to extract keywords and retrieve nodes.
-- [KeywordTableRAKERetriever](/framework-api-reference/classes/keywordtablerakeretriever/) uses the RAKE (Rapid Automatic Keyword Extraction) algorithm to extract keywords from the query, focusing on co-occurrence and context for keyword-based retrieval.
-- [Bm25Retriever](/framework-api-reference/classes/bm25retriever/) uses the BM25 algorithm to extract keywords from the query and retrieve relevant nodes based on keyword matches.
 
 ```typescript
 const retriever = vectorIndex.asRetriever({
