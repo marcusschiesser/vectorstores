@@ -80,8 +80,30 @@ export default defineConfig({
 			},
 			sidebar: [
 				{
-					label: "Framework",
-					autogenerate: { directory: ".", collapsed: true },
+					slug: "index",
+				},
+				{
+					label: "Getting Started",
+					autogenerate: { directory: "getting_started", collapsed: true },
+				},
+				{
+					label: "Integration",
+					autogenerate: { directory: "integration", collapsed: true },
+				},
+				{
+					label: "Tutorials",
+					autogenerate: { directory: "tutorials", collapsed: true },
+				},
+				{
+					label: "Modules",
+					autogenerate: { directory: "modules", collapsed: true },
+				},
+				{
+					label: "Migration",
+					autogenerate: { directory: "migration", collapsed: true },
+				},
+				{
+					slug: "more",
 				},
 			],
 		}),
