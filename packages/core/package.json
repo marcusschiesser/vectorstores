@@ -40,7 +40,6 @@
   },
   "dependencies": {
     "@vectorstores/env": "workspace:*",
-    "lodash": "^4.17.21",
-    "magic-bytes.js": "^1.10.0"
+    "lodash": "^4.17.21"
   }
 }

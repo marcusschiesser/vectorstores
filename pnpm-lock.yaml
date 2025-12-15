@@ -276,9 +276,6 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
-      magic-bytes.js:
-        specifier: ^1.10.0
-        version: 1.10.0
     devDependencies:
       '@edge-runtime/vm':
         specifier: ^4.0.4
