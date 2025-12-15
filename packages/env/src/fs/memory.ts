@@ -3,9 +3,9 @@
  *
  * @module
  */
-import memFS from "./memfs/index.js";
+import { MemoryFsPromises } from "./memory-impl.js";
 
 export function createWriteStream() {
   throw new Error("Not supported in this environment.");
 }
-export const fs = memFS.promises;
+export const fs = new MemoryFsPromises();
