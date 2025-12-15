@@ -1,4 +1,3 @@
-import _ from "lodash";
 import { BaseIndexStore } from ".";
 import { type IndexStruct, jsonToIndexStruct } from "../../data-structs";
 import { DEFAULT_NAMESPACE } from "../../global";
@@ -25,7 +24,8 @@ export class KVIndexStore extends BaseIndexStore {
   }
 
   async getIndexStruct(structId: string): Promise<IndexStruct | undefined> {
-    if (_.isNil(structId)) {
+    // Note: keep the historical behavior where callers may pass null/undefined at runtime.
+    if ((structId as unknown) == null) {
       const structs = await this.getIndexStructs();
       if (structs.length !== 1) {
         throw new Error("More than one index struct found");
@@ -33,7 +33,7 @@ export class KVIndexStore extends BaseIndexStore {
       return structs[0];
     } else {
       const json = await this._kvStore.get(structId, this._collection);
-      if (_.isNil(json)) {
+      if (json == null) {
         return;
       }
       return jsonToIndexStruct(json);
@@ -42,7 +42,6 @@ export class KVIndexStore extends BaseIndexStore {
 
   async getIndexStructs(): Promise<IndexStruct[]> {
     const jsons = await this._kvStore.getAll(this._collection);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return _.values(jsons).map((json: any) => jsonToIndexStruct(json));
+    return Object.values(jsons).map((json) => jsonToIndexStruct(json));
   }
 }

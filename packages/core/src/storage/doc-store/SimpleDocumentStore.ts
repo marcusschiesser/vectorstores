@@ -1,5 +1,4 @@
 import { type Logger, path } from "@vectorstores/env";
-import _ from "lodash";
 import { KVDocumentStore } from ".";
 import {
   DEFAULT_DOC_STORE_PERSIST_FILENAME,
@@ -55,10 +54,7 @@ export class SimpleDocumentStore extends KVDocumentStore {
       DEFAULT_DOC_STORE_PERSIST_FILENAME,
     ),
   ): Promise<void> {
-    if (
-      _.isObject(this.kvStore) &&
-      this.kvStore instanceof BaseInMemoryKVStore
-    ) {
+    if (this.kvStore instanceof BaseInMemoryKVStore) {
       await this.kvStore.persist(persistPath);
     }
   }
@@ -69,7 +65,7 @@ export class SimpleDocumentStore extends KVDocumentStore {
   }
 
   toDict(): SaveDict {
-    if (_.isObject(this.kvStore) && this.kvStore instanceof SimpleKVStore) {
+    if (this.kvStore instanceof SimpleKVStore) {
       return this.kvStore.toDict();
     }
     // If the kvstore is not a SimpleKVStore, you might want to throw an error or return a default value.
