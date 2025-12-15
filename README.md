@@ -3,7 +3,13 @@
   Vector database framework for your AI application.
 </h3>
 
+<p align="center">
+  <img src="https://deno.bundlejs.com/badge?q=@vectorstores/core" alt="bundle size" />
+</p>
+
 Context engineering made easy: Vectorstores provides a unified interface for connecting data to your AI application. It supports ingestion of data from various sources, loading it into vector databases and querying it later on.
+
+**Lightweight**: Only 77.5kb (gzip) - vectorstores is designed to be minimal and focused.
 
 It plays nicely with existing AI frameworks like Vercel AI SDK, see the [Vercel integration guide](https://vectorstores.org/integration/vercel/) for more details.
 
