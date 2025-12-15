@@ -113,13 +113,11 @@ export function formatLLM(nodes: NodeWithScore[]): string {
     .join("\n");
 }
 
-export * from "./encoding";
 export {
   extractDataUrlComponents,
   extractImage,
   extractSingleText,
   extractText,
-  imageToDataUrl,
 } from "./llms";
 export { objectEntries } from "./object-entries";
 export * from "./stream";
