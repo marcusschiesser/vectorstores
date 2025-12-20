@@ -3,6 +3,7 @@ import {
   type BaseEmbedding,
   getTopKEmbeddings,
   getTopKMMREmbeddings,
+  type TextEmbedFunc,
 } from "../embeddings/index.js";
 import { DEFAULT_PERSIST_DIR } from "../global/constants.js";
 import type { BaseNode } from "../schema/index.js";
@@ -139,14 +140,12 @@ export class SimpleVectorStore extends BaseVectorStore {
   static async fromPersistDir(
     persistDir: string = DEFAULT_PERSIST_DIR,
     embedModel?: BaseEmbedding,
-    options?: { logger?: Logger },
+    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
   ): Promise<SimpleVectorStore> {
     const persistPath = path.join(persistDir, "vector_store.json");
-    return await SimpleVectorStore.fromPersistPath(
-      persistPath,
-      embedModel,
-      options,
-    );
+    return await SimpleVectorStore.fromPersistPath(persistPath, embedModel, {
+      ...options,
+    });
   }
 
   client() {
@@ -278,7 +277,7 @@ export class SimpleVectorStore extends BaseVectorStore {
   static async fromPersistPath(
     persistPath: string,
     embedModel?: BaseEmbedding,
-    options?: { logger?: Logger },
+    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
   ): Promise<SimpleVectorStore> {
     const logger = options?.logger ?? consoleLogger;
     const dirPath = path.dirname(persistPath);
@@ -307,7 +306,11 @@ export class SimpleVectorStore extends BaseVectorStore {
     data.textIdToRefDocId = dataDict.textIdToRefDocId ?? {};
     // @ts-expect-error TS2322
     data.metadataDict = dataDict.metadataDict ?? {};
-    const store = new SimpleVectorStore({ data, embedModel });
+    const store = new SimpleVectorStore({
+      data,
+      embedModel,
+      embedFunc: options?.embedFunc,
+    });
     store.persistPath = persistPath;
     return store;
   }

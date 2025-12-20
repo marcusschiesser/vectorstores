@@ -1,6 +1,6 @@
-import { BaseEmbedding } from "../embeddings/index.js";
+import type { TextEmbedFunc } from "../embeddings/index.js";
 import { DEFAULT_NAMESPACE } from "../global/index.js";
-import { ModalityType, ObjectType } from "../schema/index.js";
+import { ModalityType } from "../schema/index.js";
 import type {
   BaseVectorStore,
   VectorStoreByType,
@@ -22,6 +22,7 @@ type BuilderParams = {
   vectorStore: BaseVectorStore;
   vectorStores: VectorStoreByType;
   persistDir: string;
+  embedFunc: TextEmbedFunc | undefined;
 };
 
 export async function storageContextFromDefaults({
@@ -30,25 +31,28 @@ export async function storageContextFromDefaults({
   vectorStore,
   vectorStores,
   persistDir,
+  embedFunc,
 }: Partial<BuilderParams>): Promise<StorageContext> {
   vectorStores = vectorStores ?? {};
   if (!persistDir) {
     docStore = docStore ?? new SimpleDocumentStore();
     indexStore = indexStore ?? new SimpleIndexStore();
     if (!(ModalityType.TEXT in vectorStores)) {
-      vectorStores[ModalityType.TEXT] = vectorStore ?? new SimpleVectorStore();
+      vectorStores[ModalityType.TEXT] =
+        vectorStore ?? new SimpleVectorStore({ embedFunc });
     }
   } else {
-    const embedModel = new BaseEmbedding();
     docStore =
       docStore ||
       (await SimpleDocumentStore.fromPersistDir(persistDir, DEFAULT_NAMESPACE));
     indexStore =
       indexStore || (await SimpleIndexStore.fromPersistDir(persistDir));
-    if (!(ObjectType.TEXT in vectorStores)) {
+    if (!(ModalityType.TEXT in vectorStores)) {
       vectorStores[ModalityType.TEXT] =
         vectorStore ??
-        (await SimpleVectorStore.fromPersistDir(persistDir, embedModel));
+        (await SimpleVectorStore.fromPersistDir(persistDir, undefined, {
+          embedFunc,
+        }));
     }
   }
 

@@ -17,7 +17,7 @@ export class BaseEmbedding extends TransformComponent<Promise<BaseNode[]>> {
     optionsOrTransformFn?:
       | {
           transformFn?: (nodes: BaseNode[]) => Promise<BaseNode[]>;
-          embedFunc?: TextEmbedFunc;
+          embedFunc?: TextEmbedFunc | undefined;
         }
       | ((nodes: BaseNode[]) => Promise<BaseNode[]>),
   ) {
