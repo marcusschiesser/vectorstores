@@ -1,5 +1,12 @@
 # @vectorstores/upstash
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [38d60b5]
+  - @vectorstores/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes

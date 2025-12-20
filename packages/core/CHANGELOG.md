@@ -1,5 +1,11 @@
 # @vectorstores/core
 
+## 0.1.3
+
+### Patch Changes
+
+- 38d60b5: fix: passing embedFunc to VectorStoreIndex still requires Settings.embedFunc
+
 ## 0.1.2
 
 ### Patch Changes
