@@ -2,7 +2,7 @@
 title: Index
 ---
 
-An `VectorStoreIndex` is the basic container for organizing your data. It retrieves the top-k `Node`s that can be send to an LLM for generating a response. The default top-k is 2.
+A `VectorStoreIndex` is the basic container for organizing your data. It retrieves the top-k `Node`s that can be sent to an LLM for generating a response. The default top-k is 2.
 
 ```typescript
 import { Document, VectorStoreIndex } from "@vectorstores/core";
@@ -11,6 +11,10 @@ const document = new Document({ text: "test" });
 
 const index = await VectorStoreIndex.fromDocuments([document]);
 ```
+
+:::note[How documents are stored]
+`VectorStoreIndex.fromDocuments` does not store documents directly in the vector store. Instead, documents are first split into smaller chunks called `Node`s. Each node contains a reference to its source document and is what actually gets embedded and stored in the vector store. This chunking allows for more precise retrieval and better context matching when querying.
+:::
 
 ## API Reference
 

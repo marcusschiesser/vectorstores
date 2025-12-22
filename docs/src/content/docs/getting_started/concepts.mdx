@@ -38,7 +38,7 @@ A data connector (i.e. `Reader`) ingest data from different data sources and dat
 [**Data Indexes**](/modules/data/data_index):
 Once you've ingested your data, vectorstores helps you index data into a format that's easy to retrieve.
 
-Under the hood, vectorstores parses the raw documents into intermediate representations, calculates vector embeddings, and stores your data in-memory or to disk.
+Under the hood, vectorstores splits your documents into smaller chunks called `Node`s, calculates vector embeddings for each node, and stores them in memory or to disk. Each node maintains a reference to its source document. This chunking enables more precise retrieval compared to storing entire documents.
 
 ### Querying Stage
 
