@@ -4,31 +4,24 @@ import { SentenceSplitter } from "../node-parser/index.js";
 import type { BaseRetriever } from "../retriever/index.js";
 import type { BaseNode, Document } from "../schema/node.js";
 import type { BaseDocumentStore } from "../storage/doc-store/base-document-store.js";
-import type { BaseIndexStore } from "../storage/index-store/index.js";
 import type { StorageContext } from "../storage/StorageContext.js";
 
-export interface BaseIndexInit<T> {
+export interface BaseIndexInit {
   storageContext: StorageContext;
   docStore: BaseDocumentStore;
-  indexStore?: BaseIndexStore | undefined;
-  indexStruct: T;
 }
 
 /**
  * Indexes are the data structure that we store our nodes and embeddings in so
  * they can be retrieved for our queries.
  */
-export abstract class BaseIndex<T> {
+export abstract class BaseIndex {
   storageContext: StorageContext;
   docStore: BaseDocumentStore;
-  indexStore?: BaseIndexStore | undefined;
-  indexStruct: T;
 
-  constructor(init: BaseIndexInit<T>) {
+  constructor(init: BaseIndexInit) {
     this.storageContext = init.storageContext;
     this.docStore = init.docStore;
-    this.indexStore = init.indexStore;
-    this.indexStruct = init.indexStruct;
   }
 
   /**

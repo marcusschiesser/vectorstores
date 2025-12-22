@@ -1,7 +1,3 @@
-// Schema
-
-// Data Structs
-export * from "./data-structs/index.js";
 // Decorator
 export * from "./decorator/index.js";
 

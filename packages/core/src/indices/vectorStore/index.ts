@@ -1,4 +1,3 @@
-import { IndexDict, IndexStructType } from "../../data-structs/index.js";
 import { BaseEmbedding, type TextEmbedFunc } from "../../embeddings/index.js";
 import { DEFAULT_SIMILARITY_TOP_K } from "../../embeddings/utils.js";
 import { Settings } from "../../global/index.js";
@@ -20,10 +19,8 @@ import {
   ImageNode,
   ModalityType,
   type NodeWithScore,
-  ObjectType,
   splitNodesByType,
 } from "../../schema/index.js";
-import type { BaseIndexStore } from "../../storage/index-store/index.js";
 import {
   type StorageContext,
   storageContextFromDefaults,
@@ -38,11 +35,7 @@ import {
 } from "../../vector-store/index.js";
 import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
 
-interface IndexStructOptions {
-  indexStruct?: IndexDict | undefined;
-  indexId?: string | undefined;
-}
-export interface VectorIndexOptions extends IndexStructOptions {
+export interface VectorIndexOptions {
   nodes?: BaseNode[] | undefined;
   storageContext?: StorageContext | undefined;
   vectorStores?: VectorStoreByType | undefined;
@@ -53,8 +46,7 @@ export interface VectorIndexOptions extends IndexStructOptions {
   embedFunc?: TextEmbedFunc | undefined;
 }
 
-export interface VectorIndexConstructorProps extends BaseIndexInit<IndexDict> {
-  indexStore: BaseIndexStore;
+export interface VectorIndexConstructorProps extends BaseIndexInit {
   vectorStores?: VectorStoreByType | undefined;
   // @deprecated: use embedFunc instead
   embedModel?: BaseEmbedding | undefined;
@@ -71,15 +63,13 @@ export type VectorIndexChatEngineOptions = {
 /**
  * The VectorStoreIndex, an index that stores the nodes only according to their vector embeddings.
  */
-export class VectorStoreIndex extends BaseIndex<IndexDict> {
-  indexStore: BaseIndexStore;
+export class VectorStoreIndex extends BaseIndex {
   /** @deprecated: use embedFunc instead */
   embedModel?: BaseEmbedding | undefined;
   vectorStores: VectorStoreByType;
 
   private constructor(init: VectorIndexConstructorProps) {
     super(init);
-    this.indexStore = init.indexStore;
     this.vectorStores = init.vectorStores ?? init.storageContext.vectorStores;
     if (init.embedFunc) {
       this.embedModel = new BaseEmbedding({ embedFunc: init.embedFunc });
@@ -101,27 +91,11 @@ export class VectorStoreIndex extends BaseIndex<IndexDict> {
       (await storageContextFromDefaults({
         embedFunc: options.embedFunc,
       }));
-    const indexStore = storageContext.indexStore;
     const docStore = storageContext.docStore;
-
-    let indexStruct = await VectorStoreIndex.setupIndexStructFromStorage(
-      indexStore,
-      options,
-    );
-
-    if (!options.nodes && !indexStruct) {
-      throw new Error(
-        "Cannot initialize VectorStoreIndex without nodes or indexStruct",
-      );
-    }
-
-    indexStruct = indexStruct ?? new IndexDict();
 
     const index = new VectorStoreIndex({
       storageContext,
       docStore,
-      indexStruct,
-      indexStore,
       vectorStores: options.vectorStores,
       embedModel: options.embedModel,
       embedFunc: options.embedFunc,
@@ -135,41 +109,6 @@ export class VectorStoreIndex extends BaseIndex<IndexDict> {
       });
     }
     return index;
-  }
-
-  private static async setupIndexStructFromStorage(
-    indexStore: BaseIndexStore,
-    options: IndexStructOptions,
-  ) {
-    const indexStructs = (await indexStore.getIndexStructs()) as IndexDict[];
-    let indexStruct: IndexDict | undefined;
-
-    if (options.indexStruct && indexStructs.length > 0) {
-      throw new Error(
-        "Cannot initialize index with both indexStruct and indexStore",
-      );
-    }
-
-    if (options.indexStruct) {
-      indexStruct = options.indexStruct;
-    } else if (indexStructs.length === 1) {
-      indexStruct =
-        indexStructs[0]!.type === IndexStructType.SIMPLE_DICT
-          ? indexStructs[0]
-          : undefined;
-      indexStruct = indexStructs[0];
-    } else if (indexStructs.length > 1 && options.indexId) {
-      indexStruct = (await indexStore.getIndexStruct(
-        options.indexId,
-      )) as IndexDict;
-    }
-    // Check indexStruct type
-    if (indexStruct && indexStruct.type !== IndexStructType.SIMPLE_DICT) {
-      throw new Error(
-        "Attempting to initialize VectorStoreIndex with non-vector indexStruct",
-      );
-    }
-    return indexStruct;
   }
 
   /**
@@ -315,30 +254,6 @@ export class VectorStoreIndex extends BaseIndex<IndexDict> {
     return new VectorIndexRetriever({ index: this, ...options });
   }
 
-  protected async insertNodesToStore(
-    newIds: string[],
-    nodes: BaseNode[],
-    vectorStore: BaseVectorStore,
-  ): Promise<void> {
-    // NOTE: if the vector store doesn't store text,
-    // we need to add the nodes to the index struct and document store
-    // NOTE: if the vector store keeps text,
-    // we only need to add image and index nodes
-    for (let i = 0; i < nodes.length; ++i) {
-      const { type } = nodes[i]!;
-      if (
-        !vectorStore.storesText ||
-        type === ObjectType.INDEX ||
-        type === ObjectType.IMAGE
-      ) {
-        const nodeWithoutEmbedding = nodes[i]!.clone();
-        nodeWithoutEmbedding.embedding = undefined;
-        this.indexStruct.addNode(nodeWithoutEmbedding, newIds[i]);
-        await this.docStore.addDocuments([nodeWithoutEmbedding], true);
-      }
-    }
-  }
-
   async insertNodes(
     nodes: BaseNode[],
     options?: {
@@ -352,12 +267,7 @@ export class VectorStoreIndex extends BaseIndex<IndexDict> {
       return;
     }
     nodes = await this.getNodeEmbeddingResults(nodes, options);
-    await addNodesToVectorStores(
-      nodes,
-      this.vectorStores,
-      this.insertNodesToStore.bind(this),
-    );
-    await this.indexStore.addIndexStruct(this.indexStruct);
+    await addNodesToVectorStores(nodes, this.vectorStores);
   }
 
   async deleteRefDoc(
@@ -377,18 +287,6 @@ export class VectorStoreIndex extends BaseIndex<IndexDict> {
     refDocId: string,
   ): Promise<void> {
     await vectorStore.delete(refDocId);
-
-    if (!vectorStore.storesText) {
-      const refDocInfo = await this.docStore.getRefDocInfo(refDocId);
-
-      if (refDocInfo) {
-        for (const nodeId of refDocInfo.nodeIds) {
-          this.indexStruct.delete(nodeId);
-          await vectorStore.delete(nodeId);
-        }
-      }
-      await this.indexStore.addIndexStruct(this.indexStruct);
-    }
   }
 }
 
@@ -504,12 +402,13 @@ export class VectorIndexRetriever extends BaseRetriever {
   protected buildNodeListFromQueryResult(result: VectorStoreQueryResult) {
     const nodesWithScores: NodeWithScore[] = [];
     for (let i = 0; i < result.ids.length; i++) {
-      const nodeFromResult = result.nodes?.[i];
-      if (!this.index.indexStruct.nodesDict[result.ids[i]!] && nodeFromResult) {
-        this.index.indexStruct.nodesDict[result.ids[i]!] = nodeFromResult;
+      const node = result.nodes?.[i];
+      if (!node) {
+        throw new Error(
+          `Node not found in query result for id ${result.ids[i]}`,
+        );
       }
 
-      const node = this.index.indexStruct.nodesDict[result.ids[i]!]!;
       // XXX: Hack, if it's an image node, we reconstruct the image from the URL
       // Alternative: Store image in doc store and retrieve it here
       if (node instanceof ImageNode) {

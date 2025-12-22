@@ -1,4 +1,3 @@
-import { CosmosClient } from "@azure/cosmos";
 import { DefaultAzureCredential } from "@azure/identity";
 import { AzureCosmosDBNoSQLConfig } from "@vectorstores/azure";
 import {
@@ -56,25 +55,13 @@ async function query() {
     );
   }
 
-  let cosmosClient: CosmosClient;
-  // initialize the cosmos client
-  if (cosmosConnectionString) {
-    cosmosClient = new CosmosClient(cosmosConnectionString);
-  } else {
-    cosmosClient = new CosmosClient({
-      endpoint: cosmosEndpoint,
-      aadCredentials: new DefaultAzureCredential(),
-    });
-  }
-
-  // use Azure CosmosDB as a vectorStore, docStore, and indexStore
-  const { vectorStore, docStore, indexStore } = await initializeStores();
+  // use Azure CosmosDB as a vectorStore and docStore
+  const { vectorStore, docStore } = await initializeStores();
 
   // Store the embeddings in the CosmosDB container
   const storageContext = await storageContextFromDefaults({
     vectorStore,
     docStore,
-    indexStore,
   });
 
   // create an index from the Azure CosmosDB NoSQL Vector Store
