@@ -1,24 +1,26 @@
 import { openai } from "@ai-sdk/openai";
 import { Document, formatLLM, VectorStoreIndex } from "@vectorstores/core";
-import { stepCountIs, streamText, tool } from "ai";
+import { embedMany, stepCountIs, streamText, tool } from "ai";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-import { useOpenAIEmbedding } from "../shared/utils/embedding";
-import { ensureOpenAIKey } from "../shared/utils/runtime";
-
 async function main() {
-  if (!ensureOpenAIKey()) return;
-  useOpenAIEmbedding();
-
   const filePath = fileURLToPath(
     new URL("../shared/data/abramov.txt", import.meta.url),
   );
   const essay = await fs.readFile(filePath, "utf-8");
   const document = new Document({ text: essay, id_: filePath });
 
-  const index = await VectorStoreIndex.fromDocuments([document]);
+  const index = await VectorStoreIndex.fromDocuments([document], {
+    embedFunc: async (input: string[]): Promise<number[][]> => {
+      const { embeddings } = await embedMany({
+        model: openai.embedding("text-embedding-3-small"),
+        values: input,
+      });
+      return embeddings;
+    },
+  });
   console.log("Successfully created index");
 
   const retriever = index.asRetriever();
