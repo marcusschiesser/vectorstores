@@ -1,7 +1,4 @@
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import {
   MongoDBAtlasVectorSearch,
   SimpleMongoReader,
@@ -49,8 +46,7 @@ async function loadAndIndex() {
   });
 
   // now create an index from all the Documents and store them in Atlas
-  const storageContext = await storageContextFromDefaults({ vectorStore });
-  await VectorStoreIndex.fromDocuments(documents, { storageContext });
+  await VectorStoreIndex.fromDocuments(documents, { vectorStore });
   console.log(
     `Successfully created embeddings in the MongoDB collection ${vectorCollectionName}.`,
   );

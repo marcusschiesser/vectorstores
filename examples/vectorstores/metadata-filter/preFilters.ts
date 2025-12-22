@@ -3,7 +3,6 @@ import {
   MetadataFilters,
   Settings,
   VectorStoreIndex,
-  storageContextFromDefaults,
 } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
@@ -12,11 +11,10 @@ async function getDataSource() {
     new Document({ text: "The dog is brown", metadata: { dogId: "1" } }),
     new Document({ text: "The dog is yellow", metadata: { dogId: "2" } }),
   ];
-  const storageContext = await storageContextFromDefaults({
+
+  return await VectorStoreIndex.fromDocuments(docs, {
     persistDir: "./cache",
   });
-
-  return await VectorStoreIndex.fromDocuments(docs, { storageContext });
 }
 
 Settings.callbackManager.on("retrieve-end", (event) => {

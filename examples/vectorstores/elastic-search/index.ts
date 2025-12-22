@@ -1,8 +1,4 @@
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { ElasticSearchVectorStore } from "@vectorstores/elastic-search";
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
@@ -43,14 +39,9 @@ async function main() {
     esApiKey: process.env.ES_API_KEY,
   });
 
-  // Create storage context with the vector store
-  const storageContext = await storageContextFromDefaults({
-    vectorStore,
-  });
-
   // Create and store embeddings in ElasticSearch
   const index = await VectorStoreIndex.fromDocuments(documents, {
-    storageContext,
+    vectorStore,
   });
 
   // Retrieve from the index

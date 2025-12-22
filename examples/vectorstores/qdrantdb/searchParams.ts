@@ -3,7 +3,6 @@ import {
   MetadataMode,
   type NodeWithScore,
   Settings,
-  storageContextFromDefaults,
   VectorStoreIndex,
 } from "@vectorstores/core";
 import { QdrantVectorStore } from "@vectorstores/qdrant";
@@ -30,7 +29,6 @@ async function main() {
       url: qdrantUrl,
       collectionName,
     });
-    const ctx = await storageContextFromDefaults({ vectorStore });
 
     const docs = [
       new Document({
@@ -39,7 +37,7 @@ async function main() {
     ];
 
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore,
     });
 
     const retriever = index.asRetriever();

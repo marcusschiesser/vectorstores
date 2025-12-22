@@ -18,10 +18,7 @@ import {
   type NodeWithScore,
   splitNodesByType,
 } from "../../schema/index.js";
-import {
-  type StorageContext,
-  storageContextFromDefaults,
-} from "../../storage/StorageContext.js";
+import { createVectorStores } from "../../storage/stores.js";
 import { extractText } from "../../utils/index.js";
 import {
   type BaseVectorStore,
@@ -34,8 +31,9 @@ import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
 
 export interface VectorIndexOptions {
   nodes?: BaseNode[] | undefined;
-  storageContext?: StorageContext | undefined;
+  vectorStore?: BaseVectorStore | undefined;
   vectorStores?: VectorStoreByType | undefined;
+  persistDir?: string | undefined;
   logProgress?: boolean | undefined;
   progressCallback?: ((progress: number, total: number) => void) | undefined;
   // @deprecated: use embedFunc instead
@@ -44,7 +42,6 @@ export interface VectorIndexOptions {
 }
 
 export interface VectorIndexConstructorProps extends BaseIndexInit {
-  vectorStores?: VectorStoreByType | undefined;
   // @deprecated: use embedFunc instead
   embedModel?: BaseEmbedding | undefined;
   embedFunc?: TextEmbedFunc | undefined;
@@ -63,11 +60,9 @@ export type VectorIndexChatEngineOptions = {
 export class VectorStoreIndex extends BaseIndex {
   /** @deprecated: use embedFunc instead */
   embedModel?: BaseEmbedding | undefined;
-  vectorStores: VectorStoreByType;
 
   private constructor(init: VectorIndexConstructorProps) {
     super(init);
-    this.vectorStores = init.vectorStores ?? init.storageContext.vectorStores;
     if (init.embedFunc) {
       this.embedModel = new BaseEmbedding({ embedFunc: init.embedFunc });
     } else {
@@ -83,15 +78,16 @@ export class VectorStoreIndex extends BaseIndex {
   public static async init(
     options: VectorIndexOptions,
   ): Promise<VectorStoreIndex> {
-    const storageContext =
-      options.storageContext ??
-      (await storageContextFromDefaults({
+    const vectorStores =
+      options.vectorStores ??
+      (await createVectorStores({
+        vectorStore: options.vectorStore,
+        persistDir: options.persistDir,
         embedFunc: options.embedFunc,
       }));
 
     const index = new VectorStoreIndex({
-      storageContext,
-      vectorStores: options.vectorStores,
+      vectorStores,
       embedModel: options.embedModel,
       embedFunc: options.embedFunc,
     });
@@ -166,12 +162,13 @@ export class VectorStoreIndex extends BaseIndex {
       docStoreStrategy?: DocStoreStrategy;
     } = {},
   ): Promise<VectorStoreIndex> {
-    args.storageContext =
-      args.storageContext ??
-      (await storageContextFromDefaults({
+    const vectorStores =
+      args.vectorStores ??
+      (await createVectorStores({
+        vectorStore: args.vectorStore,
+        persistDir: args.persistDir,
         embedFunc: args.embedFunc,
       }));
-    args.vectorStores = args.vectorStores ?? args.storageContext.vectorStores;
     args.docStoreStrategy = args.docStoreStrategy ?? DocStoreStrategy.UPSERTS;
 
     if (args.logProgress) {
@@ -198,8 +195,7 @@ export class VectorStoreIndex extends BaseIndex {
 
     // Create the index - deduplication happens in insertNodes via addNodesToVectorStores
     const index = new VectorStoreIndex({
-      storageContext: args.storageContext,
-      vectorStores: args.vectorStores,
+      vectorStores,
       embedModel: args.embedModel,
       embedFunc: args.embedFunc,
     });
@@ -221,13 +217,9 @@ export class VectorStoreIndex extends BaseIndex {
       );
     }
 
-    const storageContext = await storageContextFromDefaults({
-      vectorStores,
-    });
-
     const index = await VectorStoreIndex.init({
       nodes: [],
-      storageContext,
+      vectorStores,
     });
 
     return index;

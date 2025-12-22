@@ -87,9 +87,8 @@ const documents = [
   })
 ];
 
-const storageContext = await storageContextFromDefaults({ vectorStore });
 const index = await VectorStoreIndex.fromDocuments(documents, {
-  storageContext,
+  vectorStore,
 });
 ```
 
@@ -136,7 +135,7 @@ const filteredResponse = await vectorStore.query({
 ## Full code
 
 ```ts
-import { Document, VectorStoreIndex, storageContextFromDefaults } from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { SupabaseVectorStore } from "@vectorstores/supabase";
 
 async function main() {
@@ -158,12 +157,9 @@ async function main() {
     }),
   ];
 
-  // Create storage context
-  const storageContext = await storageContextFromDefaults({ vectorStore });
-
   // Create and store embeddings
   const index = await VectorStoreIndex.fromDocuments(documents, {
-    storageContext,
+    vectorStore,
   });
 
   // Query the index

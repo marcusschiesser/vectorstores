@@ -1,8 +1,5 @@
 import { ChromaVectorStore } from "@vectorstores/chroma";
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { CSVReader } from "@vectorstores/readers/csv";
 import { fileURLToPath } from "node:url";
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
@@ -26,11 +23,10 @@ async function main() {
 
     console.log("Creating ChromaDB vector store");
     const chromaVS = new ChromaVectorStore({ collectionName });
-    const ctx = await storageContextFromDefaults({ vectorStore: chromaVS });
 
     console.log("Embedding documents and adding to index");
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore: chromaVS,
     });
 
     console.log("Querying index");

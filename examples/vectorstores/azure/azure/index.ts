@@ -16,7 +16,6 @@ import {
   FilterOperator,
   type Metadata,
   type NodeWithScore,
-  storageContextFromDefaults,
   type TextNode,
   VectorStoreIndex,
   VectorStoreQueryMode,
@@ -144,11 +143,10 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
   const documents = await new SimpleDirectoryReader().loadData(
     "data/paul_graham/",
   );
-  const storageContext = await storageContextFromDefaults({ vectorStore });
 
-  // // Create index from documents with the specified storage context
+  // // Create index from documents with the specified vector store
   const index = await VectorStoreIndex.fromDocuments(documents, {
-    storageContext,
+    vectorStore,
     docStoreStrategy: DocStoreStrategy.UPSERTS,
   });
 

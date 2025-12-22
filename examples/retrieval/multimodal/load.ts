@@ -1,7 +1,7 @@
 import { Settings, VectorStoreIndex } from "@vectorstores/core";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import path from "path";
-import { getStorageContext } from "./storage";
+import { getVectorStores } from "./storage";
 
 // Update chunk size and overlap
 Settings.chunkSize = 512;
@@ -17,14 +17,14 @@ async function getRuntime(func: any) {
 
 async function generateDatasource() {
   console.log(`Generating storage...`);
-  // Split documents, create embeddings and store them in the storage context
+  // Split documents, create embeddings and store them in the vector stores
   const ms = await getRuntime(async () => {
     const documents = await new SimpleDirectoryReader().loadData({
       directoryPath: path.join("shared", "data", "multimodal"),
     });
-    const storageContext = await getStorageContext();
+    const vectorStores = await getVectorStores();
     await VectorStoreIndex.fromDocuments(documents, {
-      storageContext,
+      vectorStores,
     });
   });
   console.log(`Storage successfully generated in ${ms / 1000}s.`);

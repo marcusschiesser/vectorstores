@@ -1,8 +1,4 @@
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import essay from "../shared/data/essay";
 import { useOpenAIEmbedding } from "../shared/utils/embedding";
 import { formatRetrieverResponse } from "../shared/utils/format-response";
@@ -15,12 +11,9 @@ async function main() {
   const document = new Document({ text: essay, id_: "essay" });
 
   // Split text and create embeddings. Store them in a VectorStoreIndex
-  // persist the vector store automatically with the storage context
-  const storageContext = await storageContextFromDefaults({
-    persistDir: "./storage",
-  });
+  // persist the vector store automatically with persistDir
   const index = await VectorStoreIndex.fromDocuments([document], {
-    storageContext,
+    persistDir: "./storage",
   });
 
   // Retrieve from the index
@@ -32,12 +25,9 @@ async function main() {
   // Output response
   console.log(formatRetrieverResponse(response));
 
-  // load the index
-  const secondStorageContext = await storageContextFromDefaults({
-    persistDir: "./storage",
-  });
+  // load the index from persistence
   const loadedIndex = await VectorStoreIndex.init({
-    storageContext: secondStorageContext,
+    persistDir: "./storage",
   });
   const loadedRetriever = loadedIndex.asRetriever();
   const loadedResponse = await loadedRetriever.retrieve({
