@@ -3,11 +3,10 @@ import {
   AzureCosmosDBNoSQLConfig,
   AzureCosmosDBNoSqlVectorStore,
   AzureCosmosNoSqlDocumentStore,
-  AzureCosmosNoSqlIndexStore,
 } from "@vectorstores/azure";
 
 /**
- * Util function to create AzureCosmosDB vectorStore, docStore, indexStore from connection string.
+ * Util function to create AzureCosmosDB vectorStore and docStore from connection string.
  */
 export const createStoresFromConnectionString = (
   connectionString: string,
@@ -20,14 +19,11 @@ export const createStoresFromConnectionString = (
   const docStore = AzureCosmosNoSqlDocumentStore.fromConnectionString({
     connectionString,
   });
-  const indexStore = AzureCosmosNoSqlIndexStore.fromConnectionString({
-    connectionString,
-  });
-  return { vectorStore, docStore, indexStore };
+  return { vectorStore, docStore };
 };
 
 /**
- * Util function to create AzureCosmosDB vectorStore, docStore, indexStore from connection string.
+ * Util function to create AzureCosmosDB vectorStore and docStore from managed identity.
  */
 export const createStoresFromManagedIdentity = (
   endpoint: string,
@@ -43,9 +39,5 @@ export const createStoresFromManagedIdentity = (
     endpoint,
     credential,
   });
-  const indexStore = AzureCosmosNoSqlIndexStore.fromAadToken({
-    endpoint,
-    credential,
-  });
-  return { vectorStore, docStore, indexStore };
+  return { vectorStore, docStore };
 };

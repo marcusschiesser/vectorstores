@@ -6,7 +6,7 @@ import {
   type TextEmbedFunc,
 } from "../embeddings/index.js";
 import { DEFAULT_PERSIST_DIR } from "../global/constants.js";
-import type { BaseNode } from "../schema/index.js";
+import { type BaseNode, jsonToNode } from "../schema/index.js";
 import { exists } from "../storage/FileSystem.js";
 import {
   BaseVectorStore,
@@ -121,10 +121,11 @@ class SimpleVectorStoreData {
   embeddingDict: Record<string, number[]> = {};
   textIdToRefDocId: Record<string, string> = {};
   metadataDict: Record<string, MetadataValue> = {};
+  nodesDict: Record<string, BaseNode> = {};
 }
 
 export class SimpleVectorStore extends BaseVectorStore {
-  storesText: boolean = false;
+  storesText: boolean = true;
   private data: SimpleVectorStoreData;
   private persistPath: string | undefined;
 
@@ -160,6 +161,11 @@ export class SimpleVectorStore extends BaseVectorStore {
     for (const node of embeddingResults) {
       this.data.embeddingDict[node.id_] = node.getEmbedding();
 
+      // Store the node (without embedding to save space)
+      const nodeWithoutEmbedding = node.clone();
+      nodeWithoutEmbedding.embedding = undefined;
+      this.data.nodesDict[node.id_] = nodeWithoutEmbedding;
+
       if (!node.sourceNode) {
         continue;
       }
@@ -187,6 +193,7 @@ export class SimpleVectorStore extends BaseVectorStore {
       delete this.data.embeddingDict[textId];
       delete this.data.textIdToRefDocId[textId];
       if (this.data.metadataDict) delete this.data.metadataDict[textId];
+      if (this.data.nodesDict) delete this.data.nodesDict[textId];
     }
     if (this.persistPath) {
       await this.persist(this.persistPath);
@@ -250,9 +257,13 @@ export class SimpleVectorStore extends BaseVectorStore {
       throw new Error(`Invalid query mode: ${query.mode}`);
     }
 
+    // Get the nodes for the top results
+    const nodes = topIds.map((id) => this.data.nodesDict[id]!);
+
     return Promise.resolve({
       similarities: topSimilarities,
       ids: topIds,
+      nodes,
     });
   }
 
@@ -306,6 +317,12 @@ export class SimpleVectorStore extends BaseVectorStore {
     data.textIdToRefDocId = dataDict.textIdToRefDocId ?? {};
     // @ts-expect-error TS2322
     data.metadataDict = dataDict.metadataDict ?? {};
+    // Parse nodes from JSON
+    const nodesDictJson = (dataDict.nodesDict ?? {}) as Record<string, unknown>;
+    data.nodesDict = {};
+    for (const [id, nodeJson] of Object.entries(nodesDictJson)) {
+      data.nodesDict[id] = jsonToNode(nodeJson);
+    }
     const store = new SimpleVectorStore({
       data,
       embedModel,
@@ -323,6 +340,7 @@ export class SimpleVectorStore extends BaseVectorStore {
     data.embeddingDict = saveDict.embeddingDict;
     data.textIdToRefDocId = saveDict.textIdToRefDocId;
     data.metadataDict = saveDict.metadataDict;
+    data.nodesDict = saveDict.nodesDict ?? {};
     return new SimpleVectorStore({ data, embedModel });
   }
 
@@ -331,6 +349,7 @@ export class SimpleVectorStore extends BaseVectorStore {
       embeddingDict: this.data.embeddingDict,
       textIdToRefDocId: this.data.textIdToRefDocId,
       metadataDict: this.data.metadataDict,
+      nodesDict: this.data.nodesDict,
     };
   }
 }

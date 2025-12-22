@@ -27,7 +27,7 @@ export class AzureCosmosVCoreDocumentStore extends KVDocumentStore {
    * @example
    * ```ts
    * const mongoClient = new MongoClient("mongodb://localhost:27017");
-   * const indexStore = AzureCosmosVCoreDocumentStore.fromMongoClient(mongoClient, "my_db", "my_collection");
+   * const docStore = AzureCosmosVCoreDocumentStore.fromMongoClient(mongoClient, "my_db", "my_collection");
    * ```
    */
   static fromMongoClient(
@@ -55,7 +55,7 @@ export class AzureCosmosVCoreDocumentStore extends KVDocumentStore {
    * @param collectionName - Collection name
    * @example
    * ```ts
-   * const indexStore = AzureCosmosVCoreDocumentStore.fromConnectionString("mongodb://localhost:27017", "my_db", "my_collection");
+   * const docStore = AzureCosmosVCoreDocumentStore.fromConnectionString("mongodb://localhost:27017", "my_db", "my_collection");
    * ```
    */
   static fromConnectionString(
