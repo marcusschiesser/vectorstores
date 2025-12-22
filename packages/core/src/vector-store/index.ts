@@ -119,6 +119,14 @@ export abstract class BaseVectorStore<Client = unknown, T = unknown> {
     options?: object,
   ): Promise<VectorStoreQueryResult>;
 
+  /**
+   * Check if any nodes exist for the given document reference ID.
+   * Used for de-duplication during ingestion.
+   * @param refDocId The reference document ID to check
+   * @returns true if any nodes with this ref_doc_id exist
+   */
+  abstract exists(refDocId: string): Promise<boolean>;
+
   protected constructor(params?: VectorStoreBaseParams) {
     if (params?.embedFunc) {
       this.embedModel = new BaseEmbedding({ embedFunc: params.embedFunc });

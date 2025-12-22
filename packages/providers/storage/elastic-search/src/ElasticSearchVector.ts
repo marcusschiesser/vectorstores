@@ -1,11 +1,11 @@
-import { Client, type estypes } from "@elastic/elasticsearch";
+import type { Client, estypes } from "@elastic/elasticsearch";
 import {
+  type BaseNode,
   BaseVectorStore,
   metadataDictToNode,
+  type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type BaseNode,
-  type MetadataFilters,
   type StoredValue,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
@@ -318,5 +318,13 @@ export class ElasticSearchVectorStore extends BaseVectorStore {
       similarities: this.toLlamaSimilarity(topKScores),
       ids: topKIDs,
     };
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const result = await this.elasticSearchClient.count({
+      index: this.indexName,
+      query: { term: { "metadata.ref_doc_id": refDocId } },
+    });
+    return result.count > 0;
   }
 }

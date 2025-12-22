@@ -1,0 +1,20 @@
+---
+"@vectorstores/elastic-search": patch
+"@vectorstores/firestore": patch
+"@vectorstores/pinecone": patch
+"@vectorstores/postgres": patch
+"@vectorstores/supabase": patch
+"@vectorstores/weaviate": patch
+"@vectorstores/mongodb": patch
+"@vectorstores/upstash": patch
+"@vectorstores/chroma": patch
+"@vectorstores/milvus": patch
+"@vectorstores/qdrant": patch
+"@vectorstores/astra": patch
+"@vectorstores/azure": patch
+"@vectorstores/core": patch
+"@vectorstores/examples": patch
+"@vectorstores/docs": patch
+---
+
+Simplified doc strategies to be based on ref doc id instead of doc hash

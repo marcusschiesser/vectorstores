@@ -1,10 +1,10 @@
 import { createSHA256 } from "@vectorstores/env";
 import {
   type BaseNode,
+  jsonToNode,
   MetadataMode,
   type TransformComponent,
 } from "../schema";
-import { docToJson, jsonSerializer, jsonToDoc } from "../storage/doc-store";
 import { type BaseKVStore, SimpleKVStore } from "../storage/kv-store";
 
 const transformToJSON = (obj: TransformComponent) => {
@@ -56,7 +56,7 @@ export class IngestionCache {
 
   async put(hash: string, nodes: BaseNode[]) {
     const val = {
-      [this.nodesKey]: nodes.map((node) => docToJson(node, jsonSerializer)),
+      [this.nodesKey]: nodes.map((node) => node.toJSON()),
     };
     await this.cache.put(hash, val, this.collection);
   }
@@ -67,8 +67,6 @@ export class IngestionCache {
       return undefined;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return json[this.nodesKey].map((doc: any) =>
-      jsonToDoc(doc, jsonSerializer),
-    );
+    return json[this.nodesKey].map((doc: any) => jsonToNode(doc));
   }
 }

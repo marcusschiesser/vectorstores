@@ -2,11 +2,10 @@ import { TokenCredential } from "@azure/identity";
 import {
   AzureCosmosDBNoSQLConfig,
   AzureCosmosDBNoSqlVectorStore,
-  AzureCosmosNoSqlDocumentStore,
 } from "@vectorstores/azure";
 
 /**
- * Util function to create AzureCosmosDB vectorStore and docStore from connection string.
+ * Util function to create AzureCosmosDB vectorStore from connection string.
  */
 export const createStoresFromConnectionString = (
   connectionString: string,
@@ -16,14 +15,11 @@ export const createStoresFromConnectionString = (
     connectionString,
     ...dbConfig,
   });
-  const docStore = AzureCosmosNoSqlDocumentStore.fromConnectionString({
-    connectionString,
-  });
-  return { vectorStore, docStore };
+  return { vectorStore };
 };
 
 /**
- * Util function to create AzureCosmosDB vectorStore and docStore from managed identity.
+ * Util function to create AzureCosmosDB vectorStore from managed identity.
  */
 export const createStoresFromManagedIdentity = (
   endpoint: string,
@@ -35,9 +31,5 @@ export const createStoresFromManagedIdentity = (
     credential,
     ...dbConfig,
   });
-  const docStore = AzureCosmosNoSqlDocumentStore.fromAadToken({
-    endpoint,
-    credential,
-  });
-  return { vectorStore, docStore };
+  return { vectorStore };
 };

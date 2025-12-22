@@ -192,15 +192,16 @@ export class AzureCosmosDBMongoDBVectorStore extends BaseVectorStore {
   }
 
   /**
-   * Removes specified documents from the AzureCosmosDBMongoDBVectorStore.
-   * @param params Parameters for the delete operation.
+   * Deletes all nodes from the collection that belong to the given document.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions Additional delete options.
    * @returns A promise that resolves when the documents have been removed.
    */
-  async delete(id: string, deleteOptions?: object): Promise<void> {
+  async delete(refDocId: string, deleteOptions?: object): Promise<void> {
     const collection = await this.ensureCollection();
     await collection.deleteMany(
       {
-        id: id,
+        [`${this.metadataKey}.ref_doc_id`]: refDocId,
       },
       deleteOptions,
     );
@@ -367,5 +368,14 @@ export class AzureCosmosDBMongoDBVectorStore extends BaseVectorStore {
     if (indexToDelete) {
       await collection.dropIndex(indexName);
     }
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = await this.ensureCollection();
+    const count = await collection.countDocuments(
+      { [`${this.metadataKey}.ref_doc_id`]: refDocId },
+      { limit: 1 },
+    );
+    return count > 0;
   }
 }

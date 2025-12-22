@@ -1,17 +1,17 @@
+import type { QdrantClientParams, Schemas } from "@qdrant/js-client-rest";
+import { QdrantClient } from "@qdrant/js-client-rest";
 import type { BaseNode, Metadata } from "@vectorstores/core";
 import {
   BaseVectorStore,
   FilterCondition,
   FilterOperator,
+  metadataDictToNode,
+  nodeToMetadata,
   type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
-
-import type { QdrantClientParams, Schemas } from "@qdrant/js-client-rest";
-import { QdrantClient } from "@qdrant/js-client-rest";
-import { metadataDictToNode, nodeToMetadata } from "@vectorstores/core";
 
 type QdrantFilter = Schemas["Filter"];
 type QdrantMustConditions = QdrantFilter["must"];
@@ -304,6 +304,17 @@ export class QdrantVectorStore extends BaseVectorStore {
     })) as QdrantQueryResult;
 
     return this.parseToQueryResult(result);
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const result = (await this.db.scroll(this.collectionName, {
+      filter: {
+        must: [{ key: "doc_id", match: { value: refDocId } }],
+      },
+      limit: 1,
+      with_payload: false,
+    })) as { points: Array<unknown> };
+    return result.points.length > 0;
   }
 }
 

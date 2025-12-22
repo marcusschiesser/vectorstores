@@ -5,10 +5,7 @@ import {
   addNodesToVectorStores,
   runTransformations,
 } from "../../ingestion/IngestionPipeline.js";
-import {
-  createDocStoreStrategy,
-  DocStoreStrategy,
-} from "../../ingestion/strategies/index.js";
+import { DocStoreStrategy } from "../../ingestion/strategies/index.js";
 import type { MessageContent } from "../../llms/index.js";
 import { SentenceSplitter } from "../../node-parser/index.js";
 import type { QueryBundle } from "../../retriever/index.js";
@@ -91,11 +88,9 @@ export class VectorStoreIndex extends BaseIndex {
       (await storageContextFromDefaults({
         embedFunc: options.embedFunc,
       }));
-    const docStore = storageContext.docStore;
 
     const index = new VectorStoreIndex({
       storageContext,
-      docStore,
       vectorStores: options.vectorStores,
       embedModel: options.embedModel,
       embedFunc: options.embedFunc,
@@ -177,25 +172,12 @@ export class VectorStoreIndex extends BaseIndex {
         embedFunc: args.embedFunc,
       }));
     args.vectorStores = args.vectorStores ?? args.storageContext.vectorStores;
-    args.docStoreStrategy =
-      args.docStoreStrategy ??
-      // set doc store strategy defaults to the same as for the IngestionPipeline
-      (args.vectorStores
-        ? DocStoreStrategy.UPSERTS
-        : DocStoreStrategy.DUPLICATES_ONLY);
-    const docStore = args.storageContext.docStore;
+    args.docStoreStrategy = args.docStoreStrategy ?? DocStoreStrategy.UPSERTS;
 
     if (args.logProgress) {
       console.log("Using node parser on documents...");
     }
 
-    // use doc store strategy to avoid duplicates
-    const vectorStores = Object.values(args.vectorStores ?? {});
-    const docStoreStrategy = createDocStoreStrategy(
-      args.docStoreStrategy,
-      docStore,
-      vectorStores,
-    );
     const nodeParser =
       Settings.nodeParser ??
       new SentenceSplitter({
@@ -206,21 +188,30 @@ export class VectorStoreIndex extends BaseIndex {
           chunkOverlap: Settings.chunkOverlap,
         }),
       });
-    args.nodes = await runTransformations(
-      documents,
-      [nodeParser],
-      {},
-      { docStoreStrategy },
-    );
+
+    // Parse documents into nodes (no deduplication here)
+    args.nodes = await runTransformations(documents, [nodeParser], {});
+
     if (args.logProgress) {
       console.log("Finished parsing documents.");
     }
-    try {
-      return await VectorStoreIndex.init(args);
-    } catch (error) {
-      await docStoreStrategy.rollback(args.storageContext.docStore, args.nodes);
-      throw error;
-    }
+
+    // Create the index - deduplication happens in insertNodes via addNodesToVectorStores
+    const index = new VectorStoreIndex({
+      storageContext: args.storageContext,
+      vectorStores: args.vectorStores,
+      embedModel: args.embedModel,
+      embedFunc: args.embedFunc,
+    });
+
+    // Insert nodes with embeddings and deduplication
+    await index.insertNodes(args.nodes, {
+      logProgress: args.logProgress,
+      progressCallback: args.progressCallback,
+      docStoreStrategy: args.docStoreStrategy,
+    });
+
+    return index;
   }
 
   static async fromVectorStores(vectorStores: VectorStoreByType) {
@@ -261,24 +252,23 @@ export class VectorStoreIndex extends BaseIndex {
       progressCallback?:
         | ((progress: number, total: number) => void)
         | undefined;
+      docStoreStrategy?: DocStoreStrategy;
     },
   ): Promise<void> {
     if (!nodes || nodes.length === 0) {
       return;
     }
     nodes = await this.getNodeEmbeddingResults(nodes, options);
-    await addNodesToVectorStores(nodes, this.vectorStores);
+    await addNodesToVectorStores(
+      nodes,
+      this.vectorStores,
+      options?.docStoreStrategy ?? DocStoreStrategy.NONE,
+    );
   }
 
-  async deleteRefDoc(
-    refDocId: string,
-    deleteFromDocStore: boolean = true,
-  ): Promise<void> {
+  async deleteRefDoc(refDocId: string): Promise<void> {
     for (const vectorStore of Object.values(this.vectorStores)) {
       await this.deleteRefDocFromStore(vectorStore, refDocId);
-    }
-    if (deleteFromDocStore) {
-      await this.docStore.deleteDocument(refDocId, false);
     }
   }
 

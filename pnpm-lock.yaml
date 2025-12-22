@@ -152,9 +152,6 @@ importers:
       '@vectorstores/azure':
         specifier: latest
         version: link:../packages/providers/storage/azure
-      '@vectorstores/bm25-retriever':
-        specifier: latest
-        version: link:../packages/providers/retriever/bm25
       '@vectorstores/chroma':
         specifier: latest
         version: link:../packages/providers/storage/chroma
@@ -434,19 +431,6 @@ importers:
       '@vectorstores/env':
         specifier: workspace:*
         version: link:../../env
-
-  packages/providers/retriever/bm25:
-    dependencies:
-      okapibm25:
-        specifier: ^1.4.1
-        version: 1.4.1
-    devDependencies:
-      '@vectorstores/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@vectorstores/env':
-        specifier: workspace:*
-        version: link:../../../env
 
   packages/providers/storage/astra:
     dependencies:
@@ -6585,9 +6569,6 @@ packages:
 
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
-
-  okapibm25@1.4.1:
-    resolution: {integrity: sha512-UHmeH4MAtZXGFVncwbY7pfFvDVNxpsyM3W66aGPU0SHj1+ld59ty+9lJ0ifcrcnPUl1XdYoDgb06ObyCnpTs3g==}
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
@@ -16877,8 +16858,6 @@ snapshots:
       ufo: 1.6.1
 
   ohash@2.0.11: {}
-
-  okapibm25@1.4.1: {}
 
   on-finished@2.4.1:
     dependencies:

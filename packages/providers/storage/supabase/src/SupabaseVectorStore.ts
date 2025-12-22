@@ -196,4 +196,12 @@ export class SupabaseVectorStore extends BaseVectorStore {
     }
     return {};
   }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const { count } = await this.supabaseClient
+      .from(this.table)
+      .select("*", { count: "exact", head: true })
+      .eq("metadata->>ref_doc_id", refDocId);
+    return (count ?? 0) > 0;
+  }
 }

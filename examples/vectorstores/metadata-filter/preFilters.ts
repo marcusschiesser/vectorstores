@@ -2,7 +2,6 @@ import {
   Document,
   MetadataFilters,
   Settings,
-  SimpleDocumentStore,
   VectorStoreIndex,
   storageContextFromDefaults,
 } from "@vectorstores/core";
@@ -16,15 +15,8 @@ async function getDataSource() {
   const storageContext = await storageContextFromDefaults({
     persistDir: "./cache",
   });
-  const numberOfDocs = Object.keys(
-    (storageContext.docStore as SimpleDocumentStore).toDict(),
-  ).length;
-  if (numberOfDocs === 0) {
-    return await VectorStoreIndex.fromDocuments(docs, { storageContext });
-  }
-  return await VectorStoreIndex.init({
-    storageContext,
-  });
+
+  return await VectorStoreIndex.fromDocuments(docs, { storageContext });
 }
 
 Settings.callbackManager.on("retrieve-end", (event) => {

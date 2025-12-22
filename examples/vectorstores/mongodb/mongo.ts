@@ -25,21 +25,6 @@ async function main() {
   );
 
   //
-  //If you need to look at low-level details of
-  // a queryEngine (for example, needing to check each individual node)
-  //
-
-  // Split text and create embeddings. Store them in a VectorStoreIndex
-  // var storageContext = await storageContextFromDefaults({});
-  // const docStore = storageContext.docStore;
-
-  // for (const doc of documents) {
-  //   docStore.setDocumentHash(doc.id_, doc.hash);
-  // }
-  // const nodes = Settings.nodeParser.getNodesFromDocuments(documents);
-  // console.log(nodes);
-
-  //
   // Making Vector Store from documents
   //
 

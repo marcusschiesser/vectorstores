@@ -126,24 +126,36 @@ export class UpstashVectorStore extends BaseVectorStore {
   }
 
   /**
-   * Deletes a single record from the database by id.
-   * NOTE: Uses the collection property controlled by setCollection/getCollection.
-   * @param refDocId Unique identifier for the record to delete.
+   * Deletes all nodes from the database that belong to the given document.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
    * @returns Promise that resolves if the delete query did not throw an error.
    */
   async delete(refDocId: string): Promise<void> {
-    await this.db.namespace(this.namespace).delete(refDocId);
+    // Query to find all node IDs with this ref_doc_id
+    const results = await this.db.query(
+      {
+        vector: new Array(1536).fill(0),
+        topK: 10000, // Get all matching records
+        includeMetadata: true,
+        filter: `ref_doc_id = "${refDocId}"`,
+      },
+      { namespace: this.namespace },
+    );
+
+    // Delete all matching nodes by their IDs
+    const idsToDelete = results.map((r) => String(r.id));
+    if (idsToDelete.length > 0) {
+      await this.db.namespace(this.namespace).delete(idsToDelete);
+    }
   }
 
   /**
-   * Deletes a single record from the database by id.
-   * NOTE: Uses the collection property controlled by setCollection/getCollection.
-   * @param refDocId Unique identifier for the record to delete.
-   * @param deleteKwargs Required by VectorStore interface.  Currently ignored.
+   * Deletes multiple records from the database by their IDs.
+   * @param ids Array of node IDs to delete.
    * @returns Promise that resolves if the delete query did not throw an error.
    */
-  async deleteMany(refDocId: string[]): Promise<void> {
-    await this.db.namespace(this.namespace).delete(refDocId);
+  async deleteMany(ids: string[]): Promise<void> {
+    await this.db.namespace(this.namespace).delete(ids);
   }
 
   /**
@@ -232,5 +244,18 @@ export class UpstashVectorStore extends BaseVectorStore {
       data: node.text,
       metadata: nodeToMetadata(node),
     };
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const results = await this.db.query(
+      {
+        vector: new Array(1536).fill(0),
+        topK: 1,
+        includeMetadata: false,
+        filter: `ref_doc_id = "${refDocId}"`,
+      },
+      { namespace: this.namespace },
+    );
+    return results.length > 0;
   }
 }
