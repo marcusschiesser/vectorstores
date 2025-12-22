@@ -221,6 +221,11 @@ export class MilvusVectorStore extends BaseVectorStore {
     return result.IDs.str_id.data.map((s) => String(s));
   }
 
+  /**
+   * Deletes all nodes from the collection that belong to the given document.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions Additional delete options.
+   */
   public async delete(
     refDocId: string,
     deleteOptions?: Omit<DeleteReq, "ids">,
@@ -228,7 +233,7 @@ export class MilvusVectorStore extends BaseVectorStore {
     await this.ensureCollection();
 
     await this.milvusClient.delete({
-      ids: [refDocId],
+      filter: `${this.metadataKey}["ref_doc_id"] == "${refDocId}"`,
       collection_name: this.collectionName,
       ...deleteOptions,
     });
@@ -275,5 +280,16 @@ export class MilvusVectorStore extends BaseVectorStore {
 
   public async persist() {
     // no need to do anything
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    await this.ensureCollection();
+    const result = await this.milvusClient.query({
+      collection_name: this.collectionName,
+      filter: `${this.metadataKey}["ref_doc_id"] == "${refDocId}"`,
+      output_fields: [this.idKey],
+      limit: 1,
+    });
+    return result.data.length > 0;
   }
 }

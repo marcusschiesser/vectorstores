@@ -55,13 +55,12 @@ async function query() {
     );
   }
 
-  // use Azure CosmosDB as a vectorStore and docStore
-  const { vectorStore, docStore } = await initializeStores();
+  // use Azure CosmosDB as a vectorStore
+  const { vectorStore } = await initializeStores();
 
   // Store the embeddings in the CosmosDB container
   const storageContext = await storageContextFromDefaults({
     vectorStore,
-    docStore,
   });
 
   // create an index from the Azure CosmosDB NoSQL Vector Store

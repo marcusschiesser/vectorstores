@@ -352,4 +352,8 @@ export class SimpleVectorStore extends BaseVectorStore {
       nodesDict: this.data.nodesDict,
     };
   }
+
+  async exists(refDocId: string): Promise<boolean> {
+    return Object.values(this.data.textIdToRefDocId).includes(refDocId);
+  }
 }

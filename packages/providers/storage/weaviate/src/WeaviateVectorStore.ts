@@ -365,4 +365,14 @@ export class WeaviateVectorStore extends BaseVectorStore {
     // convert distance https://forum.weaviate.io/t/distance-vs-certainty-scores/258
     return 1 - distance;
   }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = await this.ensureCollection();
+    const result = await collection.query.fetchObjects({
+      filters: collection.filter.byProperty("ref_doc_id").equal(refDocId),
+      limit: 1,
+      returnProperties: [],
+    });
+    return result.objects.length > 0;
+  }
 }

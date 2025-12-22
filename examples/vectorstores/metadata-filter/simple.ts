@@ -1,7 +1,6 @@
 import {
   Document,
   Settings,
-  SimpleDocumentStore,
   VectorStoreIndex,
   storageContextFromDefaults,
 } from "@vectorstores/core";
@@ -39,16 +38,8 @@ async function getDataSource() {
   const storageContext = await storageContextFromDefaults({
     persistDir: "./cache",
   });
-  const numberOfDocs = Object.keys(
-    (storageContext.docStore as SimpleDocumentStore).toDict(),
-  ).length;
-  if (numberOfDocs === 0) {
-    // Generate the data source if it's empty
-    return await VectorStoreIndex.fromDocuments(docs, {
-      storageContext,
-    });
-  }
-  return await VectorStoreIndex.init({
+
+  return await VectorStoreIndex.fromDocuments(docs, {
     storageContext,
   });
 }

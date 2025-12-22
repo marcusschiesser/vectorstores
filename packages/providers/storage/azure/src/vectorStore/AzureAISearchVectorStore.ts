@@ -1,4 +1,8 @@
 import {
+  DefaultAzureCredential,
+  ManagedIdentityCredential,
+} from "@azure/identity";
+import {
   AzureKeyCredential,
   IndexDocumentsBatch,
   KnownAnalyzerNames,
@@ -21,11 +25,6 @@ import {
   type VectorSearch,
   type VectorSearchCompression,
 } from "@azure/search-documents";
-
-import {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-} from "@azure/identity";
 import {
   type BaseNode,
   BaseVectorStore,
@@ -795,7 +794,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
   }
 
   #buildCredentials(options: AzureAISearchOptions<T>) {
-    let { credential: credential, key, endpoint, indexName } = options;
+    let { credential, key, endpoint, indexName } = options;
 
     // validate and use credential
     if (credential) {
@@ -1295,5 +1294,16 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
 
     // Execute the search and return the result
     return await azureQueryResultSearch.search();
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const results = await this._searchClient!.search("*", {
+      filter: `ref_doc_id eq '${refDocId}'`,
+      top: 1,
+    });
+    for await (const _result of results.results) {
+      return true;
+    }
+    return false;
   }
 }

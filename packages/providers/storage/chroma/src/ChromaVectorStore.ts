@@ -4,12 +4,12 @@ import {
   FilterCondition,
   FilterOperator,
   metadataDictToNode,
+  type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  VectorStoreQueryMode,
-  type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
+  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import {
@@ -104,14 +104,18 @@ export class ChromaVectorStore extends BaseVectorStore {
     return nodes.map((node) => node.id_);
   }
 
+  /**
+   * Deletes all nodes from the collection that belong to the given document.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions Optional delete parameters for Chroma.
+   */
   async delete(
     refDocId: string,
     deleteOptions?: ChromaDeleteOptions,
   ): Promise<void> {
     const collection = await this.getCollection();
     await collection.delete(<DeleteParams>{
-      ids: [refDocId],
-      where: deleteOptions?.where,
+      where: { ref_doc_id: refDocId, ...deleteOptions?.where },
       whereDocument: deleteOptions?.whereDocument,
     });
   }
@@ -231,5 +235,14 @@ export class ChromaVectorStore extends BaseVectorStore {
       ids: queryResponse.ids[0]!,
     };
     return vectorStoreQueryResult;
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = await this.getCollection();
+    const result = await collection.get({
+      where: { ref_doc_id: refDocId as string },
+      limit: 1,
+    });
+    return result.ids.length > 0;
   }
 }

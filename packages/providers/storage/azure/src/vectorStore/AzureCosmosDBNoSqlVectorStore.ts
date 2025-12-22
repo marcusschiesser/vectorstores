@@ -345,15 +345,29 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
   }
 
   /**
-   * Delete a document from the CosmosDB container.
+   * Delete all nodes from the CosmosDB container that belong to the given document.
    *
-   * @param refDocId - The id of the document to delete
-   * @param deleteOptions - Any options to pass to the container.item.delete function
+   * @param refDocId - Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions - Any options to pass to the delete operations.
    * @returns Promise that resolves if the delete query did not throw an error.
    */
   async delete(refDocId: string, deleteOptions?: object): Promise<void> {
     await this.initialize();
-    await this.container.item(refDocId).delete(deleteOptions);
+
+    // Query all items with matching ref_doc_id
+    const querySpec = {
+      query: `SELECT c.id FROM c WHERE c.metadata.ref_doc_id = @refDocId`,
+      parameters: [{ name: "@refDocId", value: refDocId }],
+    };
+
+    const { resources: items } = await this.container.items
+      .query(querySpec)
+      .fetchAll();
+
+    // Delete each matching item
+    for (const item of items) {
+      await this.container.item(item.id, item.id).delete(deleteOptions);
+    }
   }
 
   /**
@@ -444,5 +458,14 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
       id: containerName,
     });
     this.container = container;
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    await this.initialize();
+    const { resources } = await this.container!.items.query({
+      query: `SELECT VALUE COUNT(1) FROM c WHERE c.metadata.ref_doc_id = @refDocId`,
+      parameters: [{ name: "@refDocId", value: refDocId }],
+    }).fetchAll();
+    return (resources[0] ?? 0) > 0;
   }
 }

@@ -1,8 +1,8 @@
 import {
-  ObjectType,
-  jsonToNode,
   type BaseNode,
+  jsonToNode,
   type Metadata,
+  ObjectType,
 } from "../schema";
 
 const DEFAULT_TEXT_KEY = "text";

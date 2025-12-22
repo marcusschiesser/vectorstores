@@ -3,12 +3,10 @@ import { runTransformations } from "../ingestion/IngestionPipeline.js";
 import { SentenceSplitter } from "../node-parser/index.js";
 import type { BaseRetriever } from "../retriever/index.js";
 import type { BaseNode, Document } from "../schema/node.js";
-import type { BaseDocumentStore } from "../storage/doc-store/base-document-store.js";
 import type { StorageContext } from "../storage/StorageContext.js";
 
 export interface BaseIndexInit {
   storageContext: StorageContext;
-  docStore: BaseDocumentStore;
 }
 
 /**
@@ -17,11 +15,9 @@ export interface BaseIndexInit {
  */
 export abstract class BaseIndex {
   storageContext: StorageContext;
-  docStore: BaseDocumentStore;
 
   constructor(init: BaseIndexInit) {
     this.storageContext = init.storageContext;
-    this.docStore = init.docStore;
   }
 
   /**
@@ -48,14 +44,10 @@ export abstract class BaseIndex {
       });
     const nodes = await runTransformations([document], [nodeParser]);
     await this.insertNodes(nodes);
-    await this.docStore.setDocumentHash(document.id_, document.hash);
   }
 
   abstract insertNodes(nodes: BaseNode[]): Promise<void>;
-  abstract deleteRefDoc(
-    refDocId: string,
-    deleteFromDocStore?: boolean,
-  ): Promise<void>;
+  abstract deleteRefDoc(refDocId: string): Promise<void>;
 
   /**
    * Alias for asRetriever

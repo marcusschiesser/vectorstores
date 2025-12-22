@@ -343,4 +343,13 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
 
     return result;
   }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = await this.ensureCollection();
+    const count = await collection.countDocuments(
+      { [`${this.metadataKey}.ref_doc_id`]: refDocId },
+      { limit: 1 },
+    );
+    return count > 0;
+  }
 }

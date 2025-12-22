@@ -43,7 +43,7 @@ async function initializeCosmosClient() {
   }
 }
 
-// Initialize CosmosDB to be used as a vectorStore and docStore
+// Initialize CosmosDB to be used as a vectorStore
 async function initializeStores() {
   // Create a configuration object for the Azure CosmosDB NoSQL Vector Store
   const dbConfig: AzureCosmosDBNoSQLConfig = {
@@ -88,12 +88,11 @@ async function loadVectorData() {
   // load objects from cosmos and convert them into Document objects
   const documents = await reader.loadData(simpleCosmosReaderConfig);
 
-  // use Azure CosmosDB as a vectorStore and docStore
-  const { vectorStore, docStore } = await initializeStores();
+  // use Azure CosmosDB as a vectorStore
+  const { vectorStore } = await initializeStores();
   // Store the embeddings in the CosmosDB container
   const storageContext = await storageContextFromDefaults({
     vectorStore,
-    docStore,
   });
   await VectorStoreIndex.fromDocuments(documents, { storageContext });
   console.log(

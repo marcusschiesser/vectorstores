@@ -191,16 +191,16 @@ export class FirestoreVectorStore extends BaseVectorStore<Firestore> {
   }
 
   /**
-   * Deletes all nodes from the vector store that match the given filename
-   * @param {string} fileName - Name of the file whose nodes should be deleted
+   * Deletes all nodes from the vector store that belong to the given document.
+   * @param {string} refDocId - Reference document ID - all nodes with this ref_doc_id will be deleted.
    * @returns {Promise<void>}
    */
-  async delete(fileName: string): Promise<void> {
+  async delete(refDocId: string): Promise<void> {
     const collection = this.customCollectionReference(
       this.firestoreClient.collection(this.collectionName),
     );
     const snapshot = await collection
-      .where(`${this.metadataKey}.file_name`, "==", fileName)
+      .where(`${this.metadataKey}.ref_doc_id`, "==", refDocId)
       .get();
 
     const batch = this.firestoreClient.batch();
@@ -269,5 +269,16 @@ export class FirestoreVectorStore extends BaseVectorStore<Firestore> {
       similarities: topKSimilarities,
       ids: topKIds,
     };
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = this.customCollectionReference(
+      this.firestoreClient.collection(this.collectionName),
+    );
+    const snapshot = await collection
+      .where(`${this.metadataKey}.ref_doc_id`, "==", refDocId)
+      .limit(1)
+      .get();
+    return !snapshot.empty;
   }
 }

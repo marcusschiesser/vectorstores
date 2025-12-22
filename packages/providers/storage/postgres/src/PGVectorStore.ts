@@ -372,10 +372,10 @@ export class PGVectorStore extends BaseVectorStore {
   }
 
   /**
-   * Deletes a single record from the database by id.
+   * Deletes all nodes from the database that belong to the given document.
    * NOTE: Uses the collection property controlled by setCollection/getCollection.
-   * @param refDocId Unique identifier for the record to delete.
-   * @param deleteKwargs Required by VectorStore interface.  Currently ignored.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteKwargs Required by VectorStore interface. Currently ignored.
    * @returns Promise that resolves if the delete query did not throw an error.
    */
   async delete(refDocId: string, deleteKwargs?: object): Promise<void> {
@@ -383,7 +383,7 @@ export class PGVectorStore extends BaseVectorStore {
       ? "AND collection = $2"
       : "";
     const sql: string = `DELETE FROM ${this.schemaName}.${this.tableName}
-                         WHERE id = $1 ${collectionCriteria}`;
+                         WHERE metadata->>'ref_doc_id' = $1 ${collectionCriteria}`;
 
     const db = await this.getDb();
     const params = this.collection.length
@@ -594,5 +594,19 @@ export class PGVectorStore extends BaseVectorStore {
 
   private escapeLikeString(value: string) {
     return value.replace(/[%_\\]/g, "\\$&");
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const db = await this.getDb();
+    const collectionCriteria = this.collection.length
+      ? "AND collection = $2"
+      : "";
+    const sql = `SELECT 1 FROM ${this.schemaName}.${this.tableName}
+                 WHERE metadata->>'ref_doc_id' = $1 ${collectionCriteria} LIMIT 1`;
+    const params = this.collection.length
+      ? [refDocId, this.collection]
+      : [refDocId];
+    const results = await db.query(sql, params);
+    return results.length > 0;
   }
 }

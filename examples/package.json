@@ -21,7 +21,6 @@
     "@vectorstores/assemblyai": "latest",
     "@vectorstores/astra": "latest",
     "@vectorstores/azure": "latest",
-    "@vectorstores/bm25-retriever": "latest",
     "@vectorstores/chroma": "latest",
     "@vectorstores/cohere": "latest",
     "@vectorstores/core": "latest",
