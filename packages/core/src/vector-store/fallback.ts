@@ -1,10 +1,6 @@
 import { MetadataMode } from "../index.js";
 import { type BaseNode } from "../schema/index.js";
-import {
-  VectorStoreQueryMode,
-  type VectorStoreQuery,
-  type VectorStoreQueryResult,
-} from "./index.js";
+import { type VectorStoreQueryResult } from "./index.js";
 
 /**
  * A simple BM25 implementation for in-memory search.
@@ -69,8 +65,7 @@ export class BM25 {
         const numerator = tf * (this.k1 + 1);
         const docLength = this.docLengths[docId] ?? 0;
         const denominator =
-          tf +
-          this.k1 * (1 - this.b + (this.b * docLength) / this.avgdl);
+          tf + this.k1 * (1 - this.b + (this.b * docLength) / this.avgdl);
         score += idf * (numerator / denominator);
       }
       if (score > 0) {
@@ -85,6 +80,13 @@ export class BM25 {
 /**
  * Combines vector search results and BM25 results.
  */
+const normalizeScore = (value: number, min: number, max: number) => {
+  if (max === min) {
+    return value > 0 ? 1 : 0;
+  }
+  return (value - min) / (max - min);
+};
+
 export function combineResults(
   vectorResults: VectorStoreQueryResult,
   bm25Results: VectorStoreQueryResult,
@@ -98,13 +100,14 @@ export function combineResults(
 
   // Normalize vector similarities to [0, 1] if they aren't already
   const vSimilarities = vectorResults.similarities;
-  const maxVectorSim = vSimilarities.length > 0 ? Math.max(...vSimilarities) : 0;
-  const minVectorSim = vSimilarities.length > 0 ? Math.min(...vSimilarities) : 0;
-  const vectorRange = maxVectorSim - minVectorSim || 1;
+  const maxVectorSim =
+    vSimilarities.length > 0 ? Math.max(...vSimilarities) : 0;
+  const minVectorSim =
+    vSimilarities.length > 0 ? Math.min(...vSimilarities) : 0;
 
   vectorResults.ids.forEach((id, i) => {
     const sim = vSimilarities[i] ?? 0;
-    const normSim = (sim - minVectorSim) / vectorRange;
+    const normSim = normalizeScore(sim, minVectorSim, maxVectorSim);
     const node = vectorResults.nodes?.[i];
     if (node) {
       combinedScores[id] = {
@@ -121,11 +124,10 @@ export function combineResults(
     bSimilarities.length > 0 ? Math.max(...bSimilarities) : 0;
   const minBm25Score =
     bSimilarities.length > 0 ? Math.min(...bSimilarities) : 0;
-  const bm25Range = maxBm25Score - minBm25Score || 1;
 
   bm25Results.ids.forEach((id, i) => {
     const score = bSimilarities[i] ?? 0;
-    const normScore = (score - minBm25Score) / bm25Range;
+    const normScore = normalizeScore(score, minBm25Score, maxBm25Score);
     const node = bm25Results.nodes?.[i];
     const existing = combinedScores[id];
     if (existing) {

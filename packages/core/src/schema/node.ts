@@ -1,5 +1,4 @@
 import { createSHA256, path, randomUUID } from "@vectorstores/env";
-import { lazyInitHash } from "../decorator";
 import { chunkSizeCheck } from "./utils/chunk-size-check";
 
 export enum NodeRelationship {
@@ -70,8 +69,18 @@ export abstract class BaseNode<T extends Metadata = Metadata> {
   excludedLlmMetadataKeys: string[];
   relationships: Partial<Record<NodeRelationship, RelatedNodeType<T>>>;
 
-  @lazyInitHash
-  accessor hash: string = "";
+  private _hash = "";
+
+  get hash(): string {
+    if (this._hash === "") {
+      this._hash = this.generateHash();
+    }
+    return this._hash;
+  }
+
+  set hash(newValue: string) {
+    this._hash = newValue;
+  }
 
   protected constructor(init?: BaseNodeParams<T>) {
     const {

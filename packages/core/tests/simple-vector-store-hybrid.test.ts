@@ -1,16 +1,24 @@
-import { describe, expect, test } from "vitest";
 import {
   Document,
   SimpleVectorStore,
   VectorStoreQueryMode,
-} from "../src/index.js";
+} from "@vectorstores/core";
+import { describe, expect, test } from "vitest";
 
 describe("SimpleVectorStore Hybrid and BM25 Search", () => {
   test("BM25 search", async () => {
     const vectorStore = new SimpleVectorStore();
     const nodes = [
-      new Document({ text: "The cat is on the mat", id_: "1" }),
-      new Document({ text: "The dog is in the house", id_: "2" }),
+      new Document({
+        text: "The cat is on the mat",
+        id_: "1",
+        embedding: [1, 0],
+      }),
+      new Document({
+        text: "The dog is in the house",
+        id_: "2",
+        embedding: [0, 1],
+      }),
     ];
     await vectorStore.add(nodes);
 
@@ -28,8 +36,16 @@ describe("SimpleVectorStore Hybrid and BM25 Search", () => {
   test("Hybrid search", async () => {
     const vectorStore = new SimpleVectorStore();
     const nodes = [
-      new Document({ text: "The cat is on the mat", id_: "1", embedding: [1, 0] }),
-      new Document({ text: "The dog is in the house", id_: "2", embedding: [0, 1] }),
+      new Document({
+        text: "The cat is on the mat",
+        id_: "1",
+        embedding: [1, 0],
+      }),
+      new Document({
+        text: "The dog is in the house",
+        id_: "2",
+        embedding: [0, 1],
+      }),
     ];
     await vectorStore.add(nodes);
 

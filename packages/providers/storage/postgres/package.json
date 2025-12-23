@@ -45,7 +45,8 @@
     "pgvector": "0.2.0",
     "postgres": "^3.4.4",
     "@vectorstores/core": "workspace:*",
-    "@vectorstores/env": "workspace:*"
+    "@vectorstores/env": "workspace:*",
+    "testcontainers": "^10.11.0"
   },
   "dependencies": {
     "pg": "^8.11.3",
