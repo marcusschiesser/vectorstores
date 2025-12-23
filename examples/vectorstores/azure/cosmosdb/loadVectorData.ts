@@ -5,10 +5,7 @@ import {
   SimpleCosmosDBReader,
   type SimpleCosmosDBReaderLoaderConfig,
 } from "@vectorstores/azure";
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import * as dotenv from "dotenv";
 
 import { useOpenAIEmbedding } from "../../../shared/utils/embedding";
@@ -91,10 +88,7 @@ async function loadVectorData() {
   // use Azure CosmosDB as a vectorStore
   const { vectorStore } = await initializeStores();
   // Store the embeddings in the CosmosDB container
-  const storageContext = await storageContextFromDefaults({
-    vectorStore,
-  });
-  await VectorStoreIndex.fromDocuments(documents, { storageContext });
+  await VectorStoreIndex.fromDocuments(documents, { vectorStore });
   console.log(
     `Successfully created embeddings in the CosmosDB container ${vectorCollectionName}.`,
   );

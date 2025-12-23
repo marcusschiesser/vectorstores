@@ -3,10 +3,10 @@ import { runTransformations } from "../ingestion/IngestionPipeline.js";
 import { SentenceSplitter } from "../node-parser/index.js";
 import type { BaseRetriever } from "../retriever/index.js";
 import type { BaseNode, Document } from "../schema/node.js";
-import type { StorageContext } from "../storage/StorageContext.js";
+import type { VectorStoreByType } from "../vector-store/index.js";
 
 export interface BaseIndexInit {
-  storageContext: StorageContext;
+  vectorStores: VectorStoreByType;
 }
 
 /**
@@ -14,10 +14,10 @@ export interface BaseIndexInit {
  * they can be retrieved for our queries.
  */
 export abstract class BaseIndex {
-  storageContext: StorageContext;
+  vectorStores: VectorStoreByType;
 
   constructor(init: BaseIndexInit) {
-    this.storageContext = init.storageContext;
+    this.vectorStores = init.vectorStores;
   }
 
   /**

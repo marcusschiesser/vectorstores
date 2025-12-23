@@ -1,7 +1,4 @@
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { PGVectorStore } from "@vectorstores/postgres";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import dotenv from "dotenv";
@@ -20,10 +17,8 @@ const docs = await rdr.loadData({ directoryPath: sourceDir });
 const pgvs = new PGVectorStore({ clientConfig: { connectionString } });
 pgvs.setCollection(sourceDir);
 
-const ctx = await storageContextFromDefaults({ vectorStore: pgvs });
-
 const index = await VectorStoreIndex.fromDocuments(docs, {
-  storageContext: ctx,
+  vectorStore: pgvs,
 });
 
 const retriever = index.asRetriever();

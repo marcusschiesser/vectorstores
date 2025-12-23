@@ -1,8 +1,4 @@
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { QdrantVectorStore } from "@vectorstores/qdrant";
 
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
@@ -15,8 +11,7 @@ async function main() {
     apiKey: process.env.QDRANT_API_KEY,
     collectionName: "openai_test",
   });
-  const storageContext = await storageContextFromDefaults({ vectorStore });
-  await VectorStoreIndex.fromDocuments(docs, { storageContext });
+  await VectorStoreIndex.fromDocuments(docs, { vectorStore });
   console.log("Initialized vector store successfully");
 }
 

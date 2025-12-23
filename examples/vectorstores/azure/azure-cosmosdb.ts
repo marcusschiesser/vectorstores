@@ -1,11 +1,7 @@
 import "dotenv/config";
 
 import { AzureCosmosDBNoSqlVectorStore } from "@vectorstores/azure";
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
 
@@ -27,14 +23,10 @@ import { useOpenAIEmbedding } from "../../shared/utils/embedding";
 
   const vectorStore = AzureCosmosDBNoSqlVectorStore.fromUriAndManagedIdentity();
   console.log({ vectorStore });
-  const storageContext = await storageContextFromDefaults({
-    vectorStore,
-  });
-  console.log({ storageContext });
 
   const document = new Document({ text: "Test Text" });
   const index = await VectorStoreIndex.fromDocuments([document], {
-    storageContext,
+    vectorStore,
     logProgress: true,
   });
 

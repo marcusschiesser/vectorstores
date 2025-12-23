@@ -3,7 +3,6 @@ import {
   Document,
   MetadataFilters,
   VectorStoreIndex,
-  storageContextFromDefaults,
 } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
@@ -70,11 +69,10 @@ async function generate() {
 
   console.log("Creating ChromaDB vector store");
   const chromaVS = new ChromaVectorStore({ collectionName });
-  const ctx = await storageContextFromDefaults({ vectorStore: chromaVS });
 
   console.log("Embedding documents and adding to index");
   await VectorStoreIndex.fromDocuments(docs, {
-    storageContext: ctx,
+    vectorStore: chromaVS,
   });
 }
 

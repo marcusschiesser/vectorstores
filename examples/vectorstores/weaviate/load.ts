@@ -1,7 +1,4 @@
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { CSVReader } from "@vectorstores/readers/csv";
 import { WeaviateVectorStore } from "@vectorstores/weaviate";
 import { fileURLToPath } from "node:url";
@@ -24,9 +21,8 @@ async function main() {
     );
 
     const vectorStore = new WeaviateVectorStore({ indexName });
-    const storageContext = await storageContextFromDefaults({ vectorStore });
 
-    await VectorStoreIndex.fromDocuments(docs, { storageContext });
+    await VectorStoreIndex.fromDocuments(docs, { vectorStore });
     console.log("Successfully loaded data into Weaviate");
   } catch (e) {
     console.error(e);

@@ -1,5 +1,5 @@
 /**
- * This example demonstrates setting up a storage context with custom embeddings
+ * This example demonstrates setting up vector stores with custom embeddings
  * using @huggingface/transformers and Settings.embedFunc.
  */
 
@@ -8,10 +8,11 @@ import {
   CLIPVisionModelWithProjection,
   RawImage,
 } from "@huggingface/transformers";
+import type { VectorStoreByType } from "@vectorstores/core";
 import {
   BaseEmbedding,
+  ModalityType,
   SimpleVectorStore,
-  storageContextFromDefaults,
 } from "@vectorstores/core";
 import { path } from "@vectorstores/env";
 
@@ -53,15 +54,13 @@ class ClipImageEmbedding extends BaseEmbedding {
   }
 }
 
-// set up store context with two vector stores, one for text, the other for images
-export async function getStorageContext() {
-  return await storageContextFromDefaults({
-    persistDir: "storage",
-    vectorStores: {
-      IMAGE: await SimpleVectorStore.fromPersistDir(
-        path.join("storage", "images"),
-        new ClipImageEmbedding(),
-      ),
-    },
-  });
+// set up vector stores, one for text, the other for images
+export async function getVectorStores(): Promise<VectorStoreByType> {
+  return {
+    [ModalityType.TEXT]: await SimpleVectorStore.fromPersistDir("storage"),
+    [ModalityType.IMAGE]: await SimpleVectorStore.fromPersistDir(
+      path.join("storage", "images"),
+      new ClipImageEmbedding(),
+    ),
+  };
 }

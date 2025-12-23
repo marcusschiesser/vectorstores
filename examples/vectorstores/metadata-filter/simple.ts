@@ -1,9 +1,4 @@
-import {
-  Document,
-  Settings,
-  VectorStoreIndex,
-  storageContextFromDefaults,
-} from "@vectorstores/core";
+import { Document, Settings, VectorStoreIndex } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
 Settings.callbackManager.on("retrieve-end", (event) => {
@@ -35,12 +30,9 @@ async function getDataSource() {
       },
     }),
   ];
-  const storageContext = await storageContextFromDefaults({
-    persistDir: "./cache",
-  });
 
   return await VectorStoreIndex.fromDocuments(docs, {
-    storageContext,
+    persistDir: "./cache",
   });
 }
 

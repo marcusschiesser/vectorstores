@@ -1,8 +1,5 @@
 // load-docs.ts
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { PineconeVectorStore } from "@vectorstores/pinecone";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import fs from "fs/promises";
@@ -43,11 +40,9 @@ async function main(args: any) {
 
     const pcvs = new PineconeVectorStore();
 
-    const ctx = await storageContextFromDefaults({ vectorStore: pcvs });
-
     console.debug("  - creating vector store");
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore: pcvs,
     });
     console.debug("  - done.");
   } catch (err) {

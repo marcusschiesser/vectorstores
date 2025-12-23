@@ -3,10 +3,7 @@ import { CSVReader } from "@vectorstores/readers/csv";
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
 
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 
 import { FirestoreVectorStore } from "@vectorstores/firestore";
 
@@ -38,8 +35,7 @@ async function main() {
         return rootCollection.doc("accountId-123").collection("vectors");
       },
     });
-    const storageContext = await storageContextFromDefaults({ vectorStore });
-    await VectorStoreIndex.fromDocuments(docs, { storageContext });
+    await VectorStoreIndex.fromDocuments(docs, { vectorStore });
   } catch (e) {
     console.error(e);
   }
