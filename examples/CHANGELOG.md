@@ -1,5 +1,11 @@
 # @vectorstores/examples
 
+## 0.1.3
+
+### Patch Changes
+
+- 25cd6b3: Remove storageContext - directly pass vectorStore
+
 ## 0.1.2
 
 ### Patch Changes

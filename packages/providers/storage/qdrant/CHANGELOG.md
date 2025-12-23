@@ -1,5 +1,12 @@
 # @vectorstores/qdrant
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [25cd6b3]
+  - @vectorstores/core@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
