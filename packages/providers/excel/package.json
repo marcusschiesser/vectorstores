@@ -1,7 +1,7 @@
 {
   "name": "@vectorstores/excel",
   "description": "Excel Reader for vectorstores",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "types": "dist/index.d.ts",
   "main": "dist/index.cjs",
