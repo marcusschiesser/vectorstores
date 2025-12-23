@@ -2,7 +2,33 @@
 title: Vector Stores
 ---
 
-Vector stores save embedding vectors of your ingested document chunks.
+Available Vector stores save embedding vectors of your ingested document chunks.
+
+## Search Modes
+
+Most vector stores in this library support the following search modes:
+
+- **Default**: Standard vector similarity search using embeddings.
+- **BM25**: Keyword search using the BM25 algorithm.
+- **Hybrid**: A combination of vector similarity search and BM25 keyword search.
+
+You can specify the search mode in the `query` method of the vector store:
+
+```typescript
+import { VectorStoreQueryMode } from "@vectorstores/core";
+
+const result = await vectorStore.query({
+  queryStr: "your keyword query",
+  queryEmbedding: [0.1, 0.2, ...],
+  mode: VectorStoreQueryMode.HYBRID,
+  similarityTopK: 5,
+  alpha: 0.5, // Importance of vector search vs keyword search (0.0 to 1.0)
+});
+```
+
+### Native vs Fallback Support
+
+Where possible, this library uses the native hybrid and BM25 implementations of the underlying vector store (e.g., Weaviate, ElasticSearch, MongoDB Atlas, PostgreSQL). If a vector store does not support these modes natively, a fallback implementation is used where possible.
 
 ## Available Vector Stores
 

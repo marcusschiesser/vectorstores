@@ -10,6 +10,7 @@ import {
   type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
+  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 
@@ -278,10 +279,6 @@ export class QdrantVectorStore extends BaseVectorStore {
     let queryFilters: QdrantFilter | undefined;
     let searchParams: QdrantSearchParams | undefined;
 
-    if (!query.queryEmbedding) {
-      throw new Error("No query embedding provided");
-    }
-
     if (qdrantFilters) {
       queryFilters = qdrantFilters;
     } else {
@@ -294,6 +291,12 @@ export class QdrantVectorStore extends BaseVectorStore {
       searchParams = buildSearchParams(query);
     }
 
+    if (!query.queryEmbedding && query.mode !== VectorStoreQueryMode.BM25) {
+      throw new Error("No query embedding provided");
+    }
+
+    // For now, Qdrant implementation only supports dense vector search.
+    // BM25 and HYBRID will fallback to dense vector search if no sparse vectors are configured.
     const result = (await this.db.query(this.collectionName, {
       query: query.queryEmbedding,
       limit: query.similarityTopK,

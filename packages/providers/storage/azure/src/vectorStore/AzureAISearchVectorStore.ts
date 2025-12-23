@@ -1266,6 +1266,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
 
     switch (query.mode) {
       case VectorStoreQueryMode.SPARSE:
+      case VectorStoreQueryMode.BM25:
         azureQueryResultSearch = new AzureQueryResultSearchSparse(
           query,
           this.#fieldMapping,

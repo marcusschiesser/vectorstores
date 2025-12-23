@@ -35,6 +35,8 @@ export enum VectorStoreQueryMode {
 
   // for Azure AI Search
   SEMANTIC_HYBRID = "semantic_hybrid",
+
+  BM25 = "bm25",
 }
 
 export enum FilterOperator {
@@ -165,3 +167,4 @@ export const parseNumberValue = (value?: MetadataFilterValue): number => {
 
 export * from "./SimpleVectorStore.js";
 export * from "./utils.js";
+export * from "./fallback.js";

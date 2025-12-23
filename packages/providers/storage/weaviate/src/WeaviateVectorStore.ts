@@ -231,9 +231,7 @@ export class WeaviateVectorStore extends BaseVectorStore {
   }
 
   public async query(
-    query: VectorStoreQuery & {
-      queryStr: string;
-    },
+    query: VectorStoreQuery,
   ): Promise<VectorStoreQueryResult> {
     const collection = await this.ensureCollection();
     const allProperties = await this.getAllProperties();
@@ -250,33 +248,45 @@ export class WeaviateVectorStore extends BaseVectorStore {
       filters = toWeaviateFilter(collection, query.filters);
     }
 
-    const hybridOptions: BaseHybridOptions<undefined> = {
-      returnMetadata: Object.values(SIMILARITY_KEYS),
-      returnProperties: allProperties,
-      includeVector: true,
-    };
-    const alpha = this.getQueryAlpha(query);
-    if (query.queryEmbedding) {
-      hybridOptions.vector = query.queryEmbedding;
-    }
-    if (query.similarityTopK) {
-      hybridOptions.limit = query.similarityTopK;
-    }
-    if (alpha) {
-      hybridOptions.alpha = alpha;
-    }
-    if (filters) {
-      hybridOptions.filters = filters;
-    }
+    let queryResult;
+    if (query.mode === VectorStoreQueryMode.BM25) {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      queryResult = await collection.query.bm25(query.queryStr, {
+        limit: query.similarityTopK,
+        ...(filters && { filters }),
+        returnProperties: allProperties,
+      });
+    } else {
+      const hybridOptions: BaseHybridOptions<undefined> = {
+        returnMetadata: Object.values(SIMILARITY_KEYS),
+        returnProperties: allProperties,
+        includeVector: true,
+      };
+      const alpha = this.getQueryAlpha(query);
+      if (query.queryEmbedding) {
+        hybridOptions.vector = query.queryEmbedding;
+      }
+      if (query.similarityTopK) {
+        hybridOptions.limit = query.similarityTopK;
+      }
+      if (alpha !== undefined) {
+        hybridOptions.alpha = alpha;
+      }
+      if (filters) {
+        hybridOptions.filters = filters;
+      }
 
-    const queryResult = await collection.query.hybrid(
-      query.queryStr,
-      hybridOptions,
-    );
+      queryResult = await collection.query.hybrid(
+        query.queryStr ?? "",
+        hybridOptions,
+      );
+    }
 
     const entries = queryResult.objects;
 
-    const similarityKey = SIMILARITY_KEYS[query.mode];
+    const similarityKey = SIMILARITY_KEYS[query.mode] ?? "distance";
     const nodes: BaseNode<Metadata>[] = [];
     const similarities: number[] = [];
     const ids: string[] = [];

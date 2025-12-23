@@ -11,7 +11,9 @@ import {
   type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
+  VectorStoreQueryMode,
   type VectorStoreQueryResult,
+  combineResults,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
 import type { BulkWriteOptions, Collection } from "mongodb";
@@ -291,6 +293,26 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
     query: VectorStoreQuery,
     options?: object,
   ): Promise<VectorStoreQueryResult> {
+    switch (query.mode) {
+      case VectorStoreQueryMode.BM25:
+        return this.bm25Search(query);
+      case VectorStoreQueryMode.HYBRID:
+        const vectorResult = await this.vectorSearch(query);
+        const bm25Result = await this.bm25Search(query);
+        return combineResults(
+          vectorResult,
+          bm25Result,
+          query.alpha ?? 0.5,
+          query.similarityTopK,
+        );
+      default:
+        return this.vectorSearch(query);
+    }
+  }
+
+  private async vectorSearch(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
     const params: Record<string, unknown> = {
       queryVector: query.queryEmbedding,
       path: this.embeddingKey,
@@ -335,13 +357,65 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
       similarities.push(score);
     }
 
-    const result = {
+    return {
       nodes,
       similarities,
       ids,
     };
+  }
 
-    return result;
+  private async bm25Search(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
+    if (!query.queryStr) {
+      throw new Error("queryStr is required for BM25 mode");
+    }
+
+    const pipeline = [
+      {
+        $search: {
+          index: this.indexName,
+          text: {
+            query: query.queryStr,
+            path: this.textKey,
+          },
+        },
+      },
+      {
+        $project: {
+          score: { $meta: "searchScore" },
+          [this.embeddingKey]: 0,
+        },
+      },
+      { $limit: query.similarityTopK },
+    ];
+
+    const collection = await this.ensureCollection();
+    const cursor = await collection.aggregate(pipeline);
+
+    const nodes: BaseNode[] = [];
+    const ids: string[] = [];
+    const similarities: number[] = [];
+
+    for await (const res of await cursor) {
+      const text = res[this.textKey];
+      const score = res.score;
+      const id = res[this.idKey];
+      const metadata = res[this.metadataKey];
+
+      const node = metadataDictToNode(metadata);
+      node.setContent(text);
+
+      ids.push(id);
+      nodes.push(node);
+      similarities.push(score);
+    }
+
+    return {
+      nodes,
+      similarities,
+      ids,
+    };
   }
 
   async exists(refDocId: string): Promise<boolean> {

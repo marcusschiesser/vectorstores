@@ -20,6 +20,8 @@ import {
   type VectorStoreQuery,
   VectorStoreQueryMode,
   type VectorStoreQueryResult,
+  BM25,
+  combineResults,
 } from "./index.js";
 
 const LEARNER_MODES = new Set<VectorStoreQueryMode>([
@@ -252,6 +254,49 @@ export class SimpleVectorStore extends BaseVectorStore {
         embeddings,
         query.similarityTopK,
         nodeIds,
+      );
+    } else if (query.mode === VectorStoreQueryMode.BM25) {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const results = bm25.search(query.queryStr, query.similarityTopK);
+      topSimilarities = results.map((r) => r.score);
+      topIds = results.map((r) => r.id);
+    } else if (query.mode === VectorStoreQueryMode.HYBRID) {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for HYBRID mode");
+      }
+      // Vector search
+      const [vSimilarities, vIds] = getTopKEmbeddings(
+        queryEmbedding,
+        embeddings,
+        query.similarityTopK,
+        nodeIds,
+      );
+      const vNodes = vIds.map((id) => this.data.nodesDict[id]!);
+      const vectorResult: VectorStoreQueryResult = {
+        similarities: vSimilarities,
+        ids: vIds,
+        nodes: vNodes,
+      };
+
+      // BM25 search
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const bm25Results = bm25.search(query.queryStr, query.similarityTopK);
+      const bm25Result: VectorStoreQueryResult = {
+        similarities: bm25Results.map((r) => r.score),
+        ids: bm25Results.map((r) => r.id),
+        nodes: bm25Results.map((r) => this.data.nodesDict[r.id]!),
+      };
+
+      return combineResults(
+        vectorResult,
+        bm25Result,
+        query.alpha ?? 0.5,
+        query.similarityTopK,
       );
     } else {
       throw new Error(`Invalid query mode: ${query.mode}`);

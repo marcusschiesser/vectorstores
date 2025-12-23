@@ -15,6 +15,7 @@ import {
   type MetadataFilterValue,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
+  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import type { VercelPool } from "@vercel/postgres";
@@ -517,25 +518,16 @@ export class PGVectorStore extends BaseVectorStore {
     query: VectorStoreQuery,
     options?: object,
   ): Promise<VectorStoreQueryResult> {
-    // TODO QUERY TYPES:
-    //    Distance:       SELECT embedding <=> $1 AS distance FROM items;
-    //    Inner Product:  SELECT (embedding <#> $1) * -1 AS inner_product FROM items;
-    //    Cosine Sim:     SELECT 1 - (embedding <=> $1) AS cosine_similarity FROM items;
-
-    const embedding = "[" + query.queryEmbedding?.join(",") + "]";
     const max = query.similarityTopK ?? 2;
-    const whereClauses = this.collection.length ? ["collection = $2"] : [];
-
-    const params: Array<MetadataFilterValue> = this.collection.length
-      ? [embedding, this.collection]
-      : [embedding];
+    const whereClauses = this.collection.length ? ["collection = $1"] : [];
+    const params: any[] = this.collection.length ? [this.collection] : [];
 
     const filterClauses: string[] = [];
-    query.filters?.filters.forEach((filter, index) => {
+    query.filters?.filters.forEach((filter) => {
       const paramIndex = params.length + 1;
       const { clause, param } = this.buildFilterClause(filter, paramIndex);
       filterClauses.push(clause);
-      if (param) {
+      if (param !== undefined) {
         params.push(param);
       }
     });
@@ -550,14 +542,62 @@ export class PGVectorStore extends BaseVectorStore {
     const where =
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    const sql = `SELECT 
-        v.*, 
-        embeddings <=> $1 s 
-      FROM ${this.schemaName}.${this.tableName} v
-      ${where}
-      ORDER BY s 
-      LIMIT ${max}
-    `;
+    let sql = "";
+    const vectorIdx = params.length + 1;
+    const queryStrIdx = params.length + 2;
+
+    if (query.mode === VectorStoreQueryMode.BM25) {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      params.push(query.queryStr);
+      sql = `SELECT 
+          v.*, 
+          ts_rank_cd(to_tsvector('english', document), plainto_tsquery('english', $${params.length})) s 
+        FROM ${this.schemaName}.${this.tableName} v
+        ${where}
+        ORDER BY s DESC
+        LIMIT ${max}
+      `;
+    } else if (query.mode === VectorStoreQueryMode.HYBRID) {
+      if (!query.queryEmbedding) {
+        throw new Error("queryEmbedding is required for HYBRID mode");
+      }
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for HYBRID mode");
+      }
+      const embedding = "[" + query.queryEmbedding.join(",") + "]";
+      params.push(embedding);
+      params.push(query.queryStr);
+      const alpha = query.alpha ?? 0.5;
+
+      // Combine vector similarity and FTS rank using a weighted sum
+      // Vector similarity is 1 - (embeddings <=> $vector)
+      // FTS rank is normalized or used as is
+      sql = `SELECT 
+          v.*, 
+          (${alpha} * (1 - (embeddings <=> $${params.length - 1}))) + 
+          (${(1 - alpha).toFixed(2)} * ts_rank_cd(to_tsvector('english', document), plainto_tsquery('english', $${params.length}))) s 
+        FROM ${this.schemaName}.${this.tableName} v
+        ${where}
+        ORDER BY s DESC
+        LIMIT ${max}
+      `;
+    } else {
+      if (!query.queryEmbedding) {
+        throw new Error("query embedding is not provided");
+      }
+      const embedding = "[" + query.queryEmbedding.join(",") + "]";
+      params.push(embedding);
+      sql = `SELECT 
+          v.*, 
+          embeddings <=> $${params.length} s 
+        FROM ${this.schemaName}.${this.tableName} v
+        ${where}
+        ORDER BY s 
+        LIMIT ${max}
+      `;
+    }
 
     const db = await this.getDb();
     const results = await db.query(sql, params);
@@ -576,11 +616,14 @@ export class PGVectorStore extends BaseVectorStore {
 
     const ret = {
       nodes: nodes,
-      similarities: results.map((row) => 1 - row.s),
+      similarities:
+        query.mode === VectorStoreQueryMode.DEFAULT
+          ? results.map((row) => 1 - row.s)
+          : results.map((row) => parseFloat(row.s)),
       ids: results.map((row) => row.id),
     };
 
-    return Promise.resolve(ret);
+    return ret;
   }
 
   /**
