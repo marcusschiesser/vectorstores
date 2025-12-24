@@ -17,7 +17,6 @@ import {
   type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";

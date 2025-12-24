@@ -1,19 +1,19 @@
 import {
-  BaseVectorStore,
-  FilterCondition,
-  metadataDictToNode,
-  MetadataMode,
-  nodeToMetadata,
   type BaseEmbedding,
   type BaseNode,
+  BaseVectorStore,
+  combineResults,
+  FilterCondition,
   type FilterOperator,
+  metadataDictToNode,
   type MetadataFilter,
   type MetadataFilters,
+  MetadataMode,
+  nodeToMetadata,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
   VectorStoreQueryMode,
   type VectorStoreQueryResult,
-  combineResults,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
 import type { BulkWriteOptions, Collection } from "mongodb";
@@ -296,7 +296,7 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
     switch (query.mode) {
       case VectorStoreQueryMode.BM25:
         return this.bm25Search(query);
-      case VectorStoreQueryMode.HYBRID:
+      case VectorStoreQueryMode.HYBRID: {
         const vectorResult = await this.vectorSearch(query);
         const bm25Result = await this.bm25Search(query);
         return combineResults(
@@ -305,6 +305,7 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
           query.alpha ?? 0.5,
           query.similarityTopK,
         );
+      }
       default:
         return this.vectorSearch(query);
     }

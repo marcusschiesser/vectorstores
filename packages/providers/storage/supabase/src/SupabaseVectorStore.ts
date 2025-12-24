@@ -1,16 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  type BaseNode,
   BaseVectorStore,
+  combineResults,
   metadataDictToNode,
+  type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type BaseNode,
-  type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
   VectorStoreQueryMode,
   type VectorStoreQueryResult,
-  combineResults,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
 
@@ -139,7 +139,7 @@ export class SupabaseVectorStore extends BaseVectorStore {
     switch (query.mode) {
       case VectorStoreQueryMode.BM25:
         return this.bm25Search(query);
-      case VectorStoreQueryMode.HYBRID:
+      case VectorStoreQueryMode.HYBRID: {
         const vectorResult = await this.vectorSearch(query);
         const bm25Result = await this.bm25Search(query);
         return combineResults(
@@ -148,6 +148,7 @@ export class SupabaseVectorStore extends BaseVectorStore {
           query.alpha ?? 0.5,
           query.similarityTopK,
         );
+      }
       default:
         return this.vectorSearch(query);
     }

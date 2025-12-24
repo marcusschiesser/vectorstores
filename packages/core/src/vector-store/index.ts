@@ -165,6 +165,6 @@ export const parseNumberValue = (value?: MetadataFilterValue): number => {
   return value;
 };
 
+export * from "./fallback.js";
 export * from "./SimpleVectorStore.js";
 export * from "./utils.js";
-export * from "./fallback.js";

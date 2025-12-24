@@ -10,6 +10,8 @@ import { type BaseNode, jsonToNode } from "../schema/index.js";
 import { exists } from "../storage/FileSystem.js";
 import {
   BaseVectorStore,
+  BM25,
+  combineResults,
   FilterOperator,
   type MetadataFilter,
   type MetadataFilters,
@@ -20,8 +22,6 @@ import {
   type VectorStoreQuery,
   VectorStoreQueryMode,
   type VectorStoreQueryResult,
-  BM25,
-  combineResults,
 } from "./index.js";
 
 const LEARNER_MODES = new Set<VectorStoreQueryMode>([

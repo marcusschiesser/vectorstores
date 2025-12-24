@@ -7,15 +7,14 @@ import {
   FilterCondition,
   FilterOperator,
   MetadataMode,
+  VectorStoreQueryMode,
   type BaseEmbedding,
   type BaseNode,
   type IsomorphicDB,
   type Metadata,
   type MetadataFilter,
-  type MetadataFilterValue,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import type { VercelPool } from "@vercel/postgres";
@@ -520,7 +519,7 @@ export class PGVectorStore extends BaseVectorStore {
   ): Promise<VectorStoreQueryResult> {
     const max = query.similarityTopK ?? 2;
     const whereClauses = this.collection.length ? ["collection = $1"] : [];
-    const params: any[] = this.collection.length ? [this.collection] : [];
+    const params: unknown[] = this.collection.length ? [this.collection] : [];
 
     const filterClauses: string[] = [];
     query.filters?.filters.forEach((filter) => {

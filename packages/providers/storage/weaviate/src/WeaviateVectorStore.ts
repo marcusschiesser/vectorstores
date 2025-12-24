@@ -230,9 +230,7 @@ export class WeaviateVectorStore extends BaseVectorStore {
     );
   }
 
-  public async query(
-    query: VectorStoreQuery,
-  ): Promise<VectorStoreQueryResult> {
+  public async query(query: VectorStoreQuery): Promise<VectorStoreQueryResult> {
     const collection = await this.ensureCollection();
     const allProperties = await this.getAllProperties();
 
