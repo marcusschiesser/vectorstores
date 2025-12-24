@@ -1,9 +1,11 @@
 import {
   Document,
-  MetadataMode,
+  VectorStoreIndex,
   VectorStoreQueryMode,
 } from "@vectorstores/core";
 import { PGVectorStore } from "@vectorstores/postgres";
+import { getOpenAIEmbedding } from "../../shared/utils/embedding";
+import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
 async function main() {
   const vectorStore = new PGVectorStore({
@@ -12,38 +14,36 @@ async function main() {
     },
     schemaName: "public",
     tableName: "hybrid_test",
-    dimensions: 3,
+    dimensions: 1536,
   });
 
-  const nodes = [
-    new Document({
-      text: "The cat is on the mat.",
-      id_: "1",
-      embedding: [1, 0, 0],
-    }),
-    new Document({
-      text: "The dog is in the house.",
-      id_: "2",
-      embedding: [0, 1, 0],
-    }),
-  ];
+  const index = await VectorStoreIndex.fromDocuments(
+    [
+      new Document({
+        text: "The cat is on the mat.",
+        id_: "1",
+      }),
+      new Document({
+        text: "The dog is in the house.",
+        id_: "2",
+      }),
+    ],
+    {
+      vectorStore,
+      embedFunc: getOpenAIEmbedding(),
+    },
+  );
 
-  await vectorStore.add(nodes);
-
-  console.log("Hybrid Search for 'dog':");
-  const result = await vectorStore.query({
-    queryStr: "dog",
-    queryEmbedding: [0, 1, 0],
+  const retriever = index.asRetriever({
     similarityTopK: 2,
     mode: VectorStoreQueryMode.HYBRID,
     alpha: 0.5,
   });
 
-  result.nodes?.forEach((node, i) => {
-    console.log(
-      `ID: ${node.id_}, Score: ${result.similarities[i].toFixed(4)}, Text: ${node.getContent(MetadataMode.NONE)}`,
-    );
-  });
+  console.log("Hybrid Search for 'dog':");
+  const result = await retriever.retrieve({ query: "dog" });
+
+  console.log(formatRetrieverResponse(result));
 }
 
 main().catch(console.error);
