@@ -24,8 +24,8 @@ import {
   type BaseVectorStore,
   type MetadataFilters,
   type VectorStoreByType,
-  VectorStoreQueryMode,
   type VectorStoreQuery,
+  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "../../vector-store/index.js";
 import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
