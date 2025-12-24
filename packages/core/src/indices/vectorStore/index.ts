@@ -25,6 +25,7 @@ import {
   type MetadataFilters,
   type VectorStoreByType,
   VectorStoreQueryMode,
+  type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "../../vector-store/index.js";
 import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
@@ -282,11 +283,26 @@ type TopKMap = { [P in ModalityType]: number };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OmitIndex<T> = T extends { index: any } ? Omit<T, "index"> : never;
 
+const modesRequiringQueryString = new Set<VectorStoreQueryMode>([
+  VectorStoreQueryMode.BM25,
+  VectorStoreQueryMode.HYBRID,
+  VectorStoreQueryMode.SEMANTIC_HYBRID,
+]);
+
+function requiresQueryEmbedding(mode: VectorStoreQueryMode) {
+  return mode !== VectorStoreQueryMode.BM25;
+}
+
+function requiresQueryString(mode: VectorStoreQueryMode) {
+  return modesRequiringQueryString.has(mode);
+}
+
 export type VectorIndexRetrieverOptions = {
   index: VectorStoreIndex;
   filters?: MetadataFilters | undefined;
   mode?: VectorStoreQueryMode;
   customParams?: unknown | undefined;
+  alpha?: number | undefined;
 } & (
   | {
       topK?: TopKMap | undefined;
@@ -303,6 +319,7 @@ export class VectorIndexRetriever extends BaseRetriever {
   filters?: MetadataFilters | undefined;
   queryMode?: VectorStoreQueryMode | undefined;
   customParams?: unknown | undefined;
+  alpha?: number | undefined;
   constructor(options: VectorIndexRetrieverOptions) {
     super();
     this.index = options.index;
@@ -321,6 +338,7 @@ export class VectorIndexRetriever extends BaseRetriever {
     }
     this.filters = options.filters;
     this.customParams = options.customParams;
+    this.alpha = options.alpha;
   }
 
   /**
@@ -362,21 +380,44 @@ export class VectorIndexRetriever extends BaseRetriever {
     }
     // overwrite embed model if specified, otherwise use the one from the vector store
     const embedModel = this.index.embedModel ?? vectorStore.embedModel;
+    const queryMode = this.queryMode ?? VectorStoreQueryMode.DEFAULT;
+    const needsEmbedding = requiresQueryEmbedding(queryMode);
+    const needsQueryString = requiresQueryString(queryMode);
     let nodes: NodeWithScore[] = [];
     // query each content item (e.g. text or image) separately
     for (const item of query) {
-      const queryEmbedding = await embedModel.getQueryEmbedding(item);
-      if (queryEmbedding) {
-        const result = await vectorStore.query({
-          queryStr,
-          queryEmbedding,
-          mode: this.queryMode ?? VectorStoreQueryMode.DEFAULT,
-          similarityTopK: this.topK[type]!,
-          filters: this.filters ?? filters ?? undefined,
-          customParams: this.customParams ?? customParams ?? undefined,
-        });
-        nodes = nodes.concat(this.buildNodeListFromQueryResult(result));
+      let queryEmbedding: number[] | null = null;
+      if (needsEmbedding) {
+        if (!embedModel) {
+          throw new Error(
+            "VectorIndexRetriever requires an embedding model for this query mode.",
+          );
+        }
+        queryEmbedding = await embedModel.getQueryEmbedding(item);
+        if (!queryEmbedding) {
+          continue;
+        }
       }
+
+      const vectorQuery: VectorStoreQuery = {
+        similarityTopK: this.topK[type]!,
+        mode: queryMode,
+        filters: this.filters ?? filters ?? undefined,
+        customParams: this.customParams ?? customParams ?? undefined,
+      };
+
+      if (needsEmbedding && queryEmbedding) {
+        vectorQuery.queryEmbedding = queryEmbedding;
+      }
+      if (needsQueryString) {
+        vectorQuery.queryStr = queryStr;
+      }
+      if (this.alpha !== undefined) {
+        vectorQuery.alpha = this.alpha;
+      }
+
+      const result = await vectorStore.query(vectorQuery);
+      nodes = nodes.concat(this.buildNodeListFromQueryResult(result));
     }
     return nodes;
   }
