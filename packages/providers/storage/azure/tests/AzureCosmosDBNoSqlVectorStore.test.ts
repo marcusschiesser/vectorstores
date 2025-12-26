@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { BaseNode } from "@vectorstores/core";
-import { VectorStoreQueryMode } from "@vectorstores/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestableAzureCosmosDBNoSqlVectorStore } from "../mocks/TestableAzureCosmosDBNoSqlVectorStore.js";
 import { createMockClient } from "../utility/mockCosmosClient.js"; // Import the mock client
@@ -113,7 +112,7 @@ describe("AzureCosmosDBNoSqlVectorStore Tests", () => {
       store.query({
         queryEmbedding: [],
         similarityTopK: 4,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       }),
     ).rejects.toThrowError(
       "queryEmbedding is required for AzureCosmosDBNoSqlVectorStore query",

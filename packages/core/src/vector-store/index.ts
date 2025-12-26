@@ -22,22 +22,25 @@ export interface VectorStoreQueryResult {
   ids: string[];
 }
 
-export enum VectorStoreQueryMode {
-  DEFAULT = "default",
-  SPARSE = "sparse",
-  HYBRID = "hybrid",
+export const VectorStoreQueryMode = {
+  DEFAULT: "default",
+  SPARSE: "sparse",
+  HYBRID: "hybrid",
   // fit learners
-  SVM = "svm",
-  LOGISTIC_REGRESSION = "logistic_regression",
-  LINEAR_REGRESSION = "linear_regression",
+  SVM: "svm",
+  LOGISTIC_REGRESSION: "logistic_regression",
+  LINEAR_REGRESSION: "linear_regression",
   // maximum marginal relevance
-  MMR = "mmr",
+  MMR: "mmr",
 
   // for Azure AI Search
-  SEMANTIC_HYBRID = "semantic_hybrid",
+  SEMANTIC_HYBRID: "semantic_hybrid",
 
-  BM25 = "bm25",
-}
+  BM25: "bm25",
+} as const;
+
+export type VectorStoreQueryMode =
+  (typeof VectorStoreQueryMode)[keyof typeof VectorStoreQueryMode];
 
 export enum FilterOperator {
   EQ = "==", // default operator (string, number)

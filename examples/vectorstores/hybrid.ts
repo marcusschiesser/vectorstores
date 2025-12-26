@@ -2,7 +2,6 @@ import {
   Document,
   SimpleVectorStore,
   VectorStoreIndex,
-  VectorStoreQueryMode,
 } from "@vectorstores/core";
 import { getOpenAIEmbedding } from "../shared/utils/embedding";
 import { formatRetrieverResponse } from "../shared/utils/format-response";
@@ -30,7 +29,7 @@ async function main() {
 
   console.log("BM25 Search for 'dog':");
   const bm25Retriever = index.asRetriever({
-    mode: VectorStoreQueryMode.BM25,
+    mode: "bm25",
     similarityTopK: 2,
   });
   const bm25Result = await bm25Retriever.retrieve("dog");
@@ -39,7 +38,7 @@ async function main() {
 
   console.log("\nHybrid Search for 'bird':");
   const hybridRetriever = index.asRetriever({
-    mode: VectorStoreQueryMode.HYBRID,
+    mode: "hybrid",
     similarityTopK: 2,
     alpha: 0.5,
   });

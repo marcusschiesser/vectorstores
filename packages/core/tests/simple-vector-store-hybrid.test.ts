@@ -2,7 +2,6 @@ import {
   Document,
   SimpleVectorStore,
   VectorStoreIndex,
-  VectorStoreQueryMode,
   type TextEmbedFunc,
 } from "@vectorstores/core";
 import { describe, expect, test } from "vitest";
@@ -43,7 +42,7 @@ describe("SimpleVectorStore Hybrid and BM25 Search", () => {
   test("BM25 search", async () => {
     const { index } = await createIndex();
     const retriever = index.asRetriever({
-      mode: VectorStoreQueryMode.BM25,
+      mode: "bm25",
       similarityTopK: 1,
     });
 
@@ -57,7 +56,7 @@ describe("SimpleVectorStore Hybrid and BM25 Search", () => {
   test("Hybrid search", async () => {
     const { index } = await createIndex();
     const retriever = index.asRetriever({
-      mode: VectorStoreQueryMode.HYBRID,
+      mode: "hybrid",
       similarityTopK: 1,
       alpha: 0.5,
     });

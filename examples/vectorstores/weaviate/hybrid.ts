@@ -1,8 +1,4 @@
-import {
-  Document,
-  VectorStoreIndex,
-  VectorStoreQueryMode,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { WeaviateVectorStore } from "@vectorstores/weaviate";
 import { getOpenAIEmbedding } from "../../shared/utils/embedding";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
@@ -35,7 +31,7 @@ async function main() {
 
   const retriever = index.asRetriever({
     similarityTopK: 2,
-    mode: VectorStoreQueryMode.HYBRID,
+    mode: "hybrid",
     alpha: 0.5,
   });
 

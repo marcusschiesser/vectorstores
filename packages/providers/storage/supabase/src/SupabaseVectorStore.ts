@@ -9,7 +9,6 @@ import {
   nodeToMetadata,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
@@ -137,9 +136,9 @@ export class SupabaseVectorStore extends BaseVectorStore {
     options?: object,
   ): Promise<VectorStoreQueryResult> {
     switch (query.mode) {
-      case VectorStoreQueryMode.BM25:
+      case "bm25":
         return this.bm25Search(query);
-      case VectorStoreQueryMode.HYBRID: {
+      case "hybrid": {
         const vectorResult = await this.vectorSearch(query);
         const bm25Result = await this.bm25Search(query);
         return combineResults(

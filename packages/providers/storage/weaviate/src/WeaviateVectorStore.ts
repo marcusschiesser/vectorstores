@@ -14,7 +14,6 @@ import {
   nodeToMetadata,
   parseArrayValue,
   parseNumberValue,
-  VectorStoreQueryMode,
   type MetadataFilter,
   type MetadataFilters,
   type VectorStoreBaseParams,
@@ -48,11 +47,9 @@ const NODE_SCHEMA = [
   },
 ];
 
-const SIMILARITY_KEYS: {
-  [key: string]: "distance" | "score";
-} = {
-  [VectorStoreQueryMode.DEFAULT]: "distance",
-  [VectorStoreQueryMode.HYBRID]: "score",
+const SIMILARITY_KEYS: Record<string, "distance" | "score"> = {
+  default: "distance",
+  hybrid: "score",
 };
 
 const buildFilterItem = (
@@ -247,7 +244,7 @@ export class WeaviateVectorStore extends BaseVectorStore {
     }
 
     let queryResult;
-    if (query.mode === VectorStoreQueryMode.BM25) {
+    if (query.mode === "bm25") {
       if (!query.queryStr) {
         throw new Error("queryStr is required for BM25 mode");
       }
@@ -344,9 +341,8 @@ export class WeaviateVectorStore extends BaseVectorStore {
 
   private getQueryAlpha(query: VectorStoreQuery): number | undefined {
     if (!query.queryEmbedding) return undefined;
-    if (query.mode === VectorStoreQueryMode.DEFAULT) return 1;
-    if (query.mode === VectorStoreQueryMode.HYBRID && query.queryStr)
-      return query.alpha;
+    if (query.mode === "default") return 1;
+    if (query.mode === "hybrid" && query.queryStr) return query.alpha;
     return undefined;
   }
 

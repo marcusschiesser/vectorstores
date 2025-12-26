@@ -20,13 +20,13 @@ import {
 } from "../../schema/index.js";
 import { createVectorStores } from "../../storage/stores.js";
 import { extractText } from "../../utils/index.js";
-import {
-  type BaseVectorStore,
-  type MetadataFilters,
-  type VectorStoreByType,
-  type VectorStoreQuery,
+import type {
+  BaseVectorStore,
+  MetadataFilters,
+  VectorStoreByType,
+  VectorStoreQuery,
   VectorStoreQueryMode,
-  type VectorStoreQueryResult,
+  VectorStoreQueryResult,
 } from "../../vector-store/index.js";
 import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
 
@@ -284,13 +284,13 @@ type TopKMap = { [P in ModalityType]: number };
 type OmitIndex<T> = T extends { index: any } ? Omit<T, "index"> : never;
 
 const modesRequiringQueryString = new Set<VectorStoreQueryMode>([
-  VectorStoreQueryMode.BM25,
-  VectorStoreQueryMode.HYBRID,
-  VectorStoreQueryMode.SEMANTIC_HYBRID,
+  "bm25",
+  "hybrid",
+  "semantic_hybrid",
 ]);
 
 function requiresQueryEmbedding(mode: VectorStoreQueryMode) {
-  return mode !== VectorStoreQueryMode.BM25;
+  return mode !== "bm25";
 }
 
 function requiresQueryString(mode: VectorStoreQueryMode) {
@@ -323,7 +323,7 @@ export class VectorIndexRetriever extends BaseRetriever {
   constructor(options: VectorIndexRetrieverOptions) {
     super();
     this.index = options.index;
-    this.queryMode = options.mode ?? VectorStoreQueryMode.DEFAULT;
+    this.queryMode = options.mode ?? "default";
     if ("topK" in options && options.topK) {
       this.topK = options.topK;
     } else {
@@ -380,7 +380,7 @@ export class VectorIndexRetriever extends BaseRetriever {
     }
     // overwrite embed model if specified, otherwise use the one from the vector store
     const embedModel = this.index.embedModel ?? vectorStore.embedModel;
-    const queryMode = this.queryMode ?? VectorStoreQueryMode.DEFAULT;
+    const queryMode = this.queryMode ?? "default";
     const needsEmbedding = requiresQueryEmbedding(queryMode);
     const needsQueryString = requiresQueryString(queryMode);
     let nodes: NodeWithScore[] = [];

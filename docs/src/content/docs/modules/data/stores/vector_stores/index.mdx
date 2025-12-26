@@ -15,12 +15,10 @@ Most vector stores in this library support the following search modes:
 You can specify the search mode in the `query` method of the vector store:
 
 ```typescript
-import { VectorStoreQueryMode } from "@vectorstores/core";
-
 const result = await vectorStore.query({
   queryStr: "your keyword query",
   queryEmbedding: [0.1, 0.2, ...],
-  mode: VectorStoreQueryMode.HYBRID,
+  mode: "hybrid",
   similarityTopK: 5,
   alpha: 0.5, // Importance of vector search vs keyword search (0.0 to 1.0)
 });

@@ -8,7 +8,6 @@ import {
   nodeToMetadata,
   type StoredValue,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { getElasticSearchClient } from "./utils";
@@ -267,7 +266,7 @@ export class ElasticSearchVectorStore extends BaseVectorStore {
     };
 
     switch (query.mode) {
-      case VectorStoreQueryMode.BM25:
+      case "bm25":
         if (!query.queryStr) {
           throw new Error("queryStr is required for BM25 mode");
         }
@@ -280,7 +279,7 @@ export class ElasticSearchVectorStore extends BaseVectorStore {
           },
         };
         break;
-      case VectorStoreQueryMode.HYBRID:
+      case "hybrid":
         if (!query.queryEmbedding) {
           throw new Error("queryEmbedding is required for HYBRID mode");
         }

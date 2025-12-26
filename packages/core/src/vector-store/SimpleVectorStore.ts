@@ -20,17 +20,17 @@ import {
   parsePrimitiveValue,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
+  type VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "./index.js";
 
 const LEARNER_MODES = new Set<VectorStoreQueryMode>([
-  VectorStoreQueryMode.SVM,
-  VectorStoreQueryMode.LINEAR_REGRESSION,
-  VectorStoreQueryMode.LOGISTIC_REGRESSION,
+  "svm",
+  "linear_regression",
+  "logistic_regression",
 ]);
 
-const MMR_MODE = VectorStoreQueryMode.MMR;
+const MMR_MODE = "mmr";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MetadataValue = Record<string, any>;
@@ -248,14 +248,14 @@ export class SimpleVectorStore extends BaseVectorStore {
         nodeIds,
         mmrThreshold,
       );
-    } else if (query.mode === VectorStoreQueryMode.DEFAULT) {
+    } else if (query.mode === "default") {
       [topSimilarities, topIds] = getTopKEmbeddings(
         queryEmbedding,
         embeddings,
         query.similarityTopK,
         nodeIds,
       );
-    } else if (query.mode === VectorStoreQueryMode.BM25) {
+    } else if (query.mode === "bm25") {
       if (!query.queryStr) {
         throw new Error("queryStr is required for BM25 mode");
       }
@@ -264,7 +264,7 @@ export class SimpleVectorStore extends BaseVectorStore {
       const results = bm25.search(query.queryStr, query.similarityTopK);
       topSimilarities = results.map((r) => r.score);
       topIds = results.map((r) => r.id);
-    } else if (query.mode === VectorStoreQueryMode.HYBRID) {
+    } else if (query.mode === "hybrid") {
       if (!query.queryStr) {
         throw new Error("queryStr is required for HYBRID mode");
       }

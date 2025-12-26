@@ -1,7 +1,6 @@
 import {
   Document,
   VectorStoreIndex,
-  VectorStoreQueryMode,
   type TextEmbedFunc,
 } from "@vectorstores/core";
 import {
@@ -81,15 +80,15 @@ describeIfE2E("PGVectorStore e2e", () => {
 
   test("supports vector, bm25, and hybrid queries", async () => {
     const vectorRetriever = index.asRetriever({
-      mode: VectorStoreQueryMode.DEFAULT,
+      mode: "default",
       similarityTopK: 1,
     });
     const bm25Retriever = index.asRetriever({
-      mode: VectorStoreQueryMode.BM25,
+      mode: "bm25",
       similarityTopK: 1,
     });
     const hybridRetriever = index.asRetriever({
-      mode: VectorStoreQueryMode.HYBRID,
+      mode: "hybrid",
       similarityTopK: 1,
       alpha: 0.4,
     });

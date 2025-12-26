@@ -7,7 +7,6 @@ import {
   FilterCondition,
   FilterOperator,
   MetadataMode,
-  VectorStoreQueryMode,
   type BaseEmbedding,
   type BaseNode,
   type IsomorphicDB,
@@ -545,7 +544,7 @@ export class PGVectorStore extends BaseVectorStore {
     const vectorIdx = params.length + 1;
     const queryStrIdx = params.length + 2;
 
-    if (query.mode === VectorStoreQueryMode.BM25) {
+    if (query.mode === "bm25") {
       if (!query.queryStr) {
         throw new Error("queryStr is required for BM25 mode");
       }
@@ -558,7 +557,7 @@ export class PGVectorStore extends BaseVectorStore {
         ORDER BY s DESC
         LIMIT ${max}
       `;
-    } else if (query.mode === VectorStoreQueryMode.HYBRID) {
+    } else if (query.mode === "hybrid") {
       if (!query.queryEmbedding) {
         throw new Error("queryEmbedding is required for HYBRID mode");
       }
@@ -616,7 +615,7 @@ export class PGVectorStore extends BaseVectorStore {
     const ret = {
       nodes: nodes,
       similarities:
-        query.mode === VectorStoreQueryMode.DEFAULT
+        query.mode === "default"
           ? results.map((row) => 1 - row.s)
           : results.map((row) => parseFloat(row.s)),
       ids: results.map((row) => row.id),
