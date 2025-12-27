@@ -14,3 +14,13 @@ const retriever = vectorIndex.asRetriever({
 // Fetch nodes!
 const nodesWithScore = await retriever.retrieve({ query: "query string" });
 ```
+
+### Interpreting Scores
+
+The `score` returned with each node varies based on the retrieval mode:
+
+- **Vector search**: Scores (0.0 to 1.0) represent cosine similarity.
+- **BM25 search**: Scores are unbounded and represent keyword relevance.
+- **Hybrid search**: Scores are based on Reciprocal Rank Fusion (RRF) and are typically small (e.g., ~0.016 for rank 1).
+
+For more details on search modes and scoring, see the [Vector Stores](/modules/data/stores/vector_stores) documentation.

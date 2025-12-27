@@ -4,7 +4,6 @@ import type { Mocked } from "vitest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { QdrantClient } from "@qdrant/js-client-rest";
-import { VectorStoreQueryMode } from "@vectorstores/core";
 import { TestableQdrantVectorStore } from "../mocks/TestableQdrantVectorStore.js";
 
 vi.mock("@qdrant/js-client-rest");
@@ -130,7 +129,7 @@ describe("QdrantVectorStore", () => {
         const searchResult = await store.query({
           queryEmbedding: [0.1, 0.2],
           similarityTopK: 1,
-          mode: VectorStoreQueryMode.DEFAULT,
+          mode: "default",
         });
 
         expect(mockQdrantClient.query).toHaveBeenCalled();
@@ -157,7 +156,7 @@ describe("QdrantVectorStore", () => {
         const searchResult = await store.query({
           queryEmbedding: [0.1, 0.2],
           similarityTopK: 1,
-          mode: VectorStoreQueryMode.DEFAULT,
+          mode: "default",
         });
 
         expect(mockQdrantClient.query).toHaveBeenCalled();
@@ -185,7 +184,7 @@ describe("QdrantVectorStore", () => {
           {
             queryEmbedding: [0.1, 0.2],
             similarityTopK: 1,
-            mode: VectorStoreQueryMode.DEFAULT,
+            mode: "default",
           },
           {
             customParams: {

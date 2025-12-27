@@ -13,7 +13,6 @@ import {
 import {
   Document,
   Settings,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import * as dotenv from "dotenv";
@@ -161,7 +160,7 @@ describe.skip("AzureCosmosDBNoSQLVectorStore", () => {
     const results: VectorStoreQueryResult = await vectorStore.query({
       queryEmbedding: embeddings[4] || [],
       similarityTopK: 1,
-      mode: VectorStoreQueryMode.DEFAULT,
+      mode: "default",
     });
     expect(results.ids.length).toEqual(1);
     expect(results.ids[0]).toEqual("3");
@@ -177,7 +176,7 @@ describe.skip("AzureCosmosDBNoSQLVectorStore", () => {
       {
         queryEmbedding: embeddings[4] || [],
         similarityTopK: 1,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       },
       options,
     );
@@ -195,7 +194,7 @@ describe.skip("AzureCosmosDBNoSQLVectorStore", () => {
       {
         queryEmbedding: embeddings[4] || [],
         similarityTopK: 1,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       },
       options,
     );
@@ -214,7 +213,7 @@ describe.skip("AzureCosmosDBNoSQLVectorStore", () => {
       {
         queryEmbedding: embeddings[4] || [],
         similarityTopK: 1,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       },
       options,
     );

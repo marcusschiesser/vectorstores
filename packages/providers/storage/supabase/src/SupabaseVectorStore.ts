@@ -1,11 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  type BaseNode,
   BaseVectorStore,
+  combineResults,
+  DEFAULT_HYBRID_PREFETCH_MULTIPLIER,
   metadataDictToNode,
+  type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type BaseNode,
-  type MetadataFilters,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
@@ -134,6 +136,33 @@ export class SupabaseVectorStore extends BaseVectorStore {
     query: VectorStoreQuery,
     options?: object,
   ): Promise<VectorStoreQueryResult> {
+    switch (query.mode) {
+      case "bm25":
+        return this.bm25Search(query);
+      case "hybrid": {
+        // Calculate prefetch limit for sub-searches
+        const prefetchK =
+          query.hybridPrefetch ??
+          query.similarityTopK * DEFAULT_HYBRID_PREFETCH_MULTIPLIER;
+        const prefetchQuery = { ...query, similarityTopK: prefetchK };
+
+        const vectorResult = await this.vectorSearch(prefetchQuery);
+        const bm25Result = await this.bm25Search(prefetchQuery);
+        return combineResults(
+          vectorResult,
+          bm25Result,
+          query.alpha ?? 0.5,
+          query.similarityTopK,
+        );
+      }
+      default:
+        return this.vectorSearch(query);
+    }
+  }
+
+  private async vectorSearch(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
     if (!query.queryEmbedding) {
       throw new Error("Query embedding is required");
     }
@@ -178,6 +207,45 @@ export class SupabaseVectorStore extends BaseVectorStore {
       ids: searchedEmbeddingResponses.map(
         (item: SearchEmbeddingsResponse) => item.id,
       ),
+    };
+  }
+
+  private async bm25Search(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
+    if (!query.queryStr) {
+      throw new Error("Query string is required for BM25 search");
+    }
+
+    const { data, error } = await this.supabaseClient
+      .from(this.table)
+      .select("*")
+      .textSearch("content", query.queryStr)
+      .limit(query.similarityTopK);
+
+    if (error) {
+      throw new Error(
+        `Error querying vector store: ${JSON.stringify(error, null, 2)}`,
+      );
+    }
+
+    const nodes = (data || []).map((item) => {
+      const node = metadataDictToNode(item.metadata ?? {}, {
+        fallback: {
+          id: item.id,
+          text: item.content,
+          metadata: item.metadata,
+        },
+      });
+      node.embedding = item.embedding;
+      node.setContent(item.content);
+      return node;
+    });
+
+    return {
+      nodes,
+      similarities: nodes.map(() => 1.0),
+      ids: (data || []).map((item) => item.id),
     };
   }
 

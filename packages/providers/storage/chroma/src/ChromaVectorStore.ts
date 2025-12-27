@@ -9,7 +9,6 @@ import {
   nodeToMetadata,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import {
@@ -200,7 +199,7 @@ export class ChromaVectorStore extends BaseVectorStore {
     if (query.docIds) {
       throw new Error("ChromaDB does not support querying by docIDs");
     }
-    if (query.mode != VectorStoreQueryMode.DEFAULT) {
+    if (query.mode != "default") {
       throw new Error("ChromaDB does not support querying by mode");
     }
 

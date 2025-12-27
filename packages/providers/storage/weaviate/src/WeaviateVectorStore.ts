@@ -14,7 +14,6 @@ import {
   nodeToMetadata,
   parseArrayValue,
   parseNumberValue,
-  VectorStoreQueryMode,
   type MetadataFilter,
   type MetadataFilters,
   type VectorStoreBaseParams,
@@ -48,11 +47,9 @@ const NODE_SCHEMA = [
   },
 ];
 
-const SIMILARITY_KEYS: {
-  [key: string]: "distance" | "score";
-} = {
-  [VectorStoreQueryMode.DEFAULT]: "distance",
-  [VectorStoreQueryMode.HYBRID]: "score",
+const SIMILARITY_KEYS: Record<string, "distance" | "score"> = {
+  default: "distance",
+  hybrid: "score",
 };
 
 const buildFilterItem = (
@@ -230,11 +227,7 @@ export class WeaviateVectorStore extends BaseVectorStore {
     );
   }
 
-  public async query(
-    query: VectorStoreQuery & {
-      queryStr: string;
-    },
-  ): Promise<VectorStoreQueryResult> {
+  public async query(query: VectorStoreQuery): Promise<VectorStoreQueryResult> {
     const collection = await this.ensureCollection();
     const allProperties = await this.getAllProperties();
 
@@ -250,33 +243,45 @@ export class WeaviateVectorStore extends BaseVectorStore {
       filters = toWeaviateFilter(collection, query.filters);
     }
 
-    const hybridOptions: BaseHybridOptions<undefined> = {
-      returnMetadata: Object.values(SIMILARITY_KEYS),
-      returnProperties: allProperties,
-      includeVector: true,
-    };
-    const alpha = this.getQueryAlpha(query);
-    if (query.queryEmbedding) {
-      hybridOptions.vector = query.queryEmbedding;
-    }
-    if (query.similarityTopK) {
-      hybridOptions.limit = query.similarityTopK;
-    }
-    if (alpha) {
-      hybridOptions.alpha = alpha;
-    }
-    if (filters) {
-      hybridOptions.filters = filters;
-    }
+    let queryResult;
+    if (query.mode === "bm25") {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      queryResult = await collection.query.bm25(query.queryStr, {
+        limit: query.similarityTopK,
+        ...(filters && { filters }),
+        returnProperties: allProperties,
+      });
+    } else {
+      const hybridOptions: BaseHybridOptions<undefined> = {
+        returnMetadata: Object.values(SIMILARITY_KEYS),
+        returnProperties: allProperties,
+        includeVector: true,
+      };
+      const alpha = this.getQueryAlpha(query);
+      if (query.queryEmbedding) {
+        hybridOptions.vector = query.queryEmbedding;
+      }
+      if (query.similarityTopK) {
+        hybridOptions.limit = query.similarityTopK;
+      }
+      if (alpha !== undefined) {
+        hybridOptions.alpha = alpha;
+      }
+      if (filters) {
+        hybridOptions.filters = filters;
+      }
 
-    const queryResult = await collection.query.hybrid(
-      query.queryStr,
-      hybridOptions,
-    );
+      queryResult = await collection.query.hybrid(
+        query.queryStr ?? "",
+        hybridOptions,
+      );
+    }
 
     const entries = queryResult.objects;
 
-    const similarityKey = SIMILARITY_KEYS[query.mode];
+    const similarityKey = SIMILARITY_KEYS[query.mode] ?? "distance";
     const nodes: BaseNode<Metadata>[] = [];
     const similarities: number[] = [];
     const ids: string[] = [];
@@ -336,9 +341,8 @@ export class WeaviateVectorStore extends BaseVectorStore {
 
   private getQueryAlpha(query: VectorStoreQuery): number | undefined {
     if (!query.queryEmbedding) return undefined;
-    if (query.mode === VectorStoreQueryMode.DEFAULT) return 1;
-    if (query.mode === VectorStoreQueryMode.HYBRID && query.queryStr)
-      return query.alpha;
+    if (query.mode === "default") return 1;
+    if (query.mode === "hybrid" && query.queryStr) return query.alpha;
     return undefined;
   }
 

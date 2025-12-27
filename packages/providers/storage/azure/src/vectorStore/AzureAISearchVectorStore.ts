@@ -36,7 +36,6 @@ import {
   nodeToMetadata,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { consoleLogger, getEnv } from "@vectorstores/env";
@@ -1265,7 +1264,8 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
       );
 
     switch (query.mode) {
-      case VectorStoreQueryMode.SPARSE:
+      case "sparse":
+      case "bm25":
         azureQueryResultSearch = new AzureQueryResultSearchSparse(
           query,
           this.#fieldMapping,
@@ -1273,7 +1273,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
           this._searchClient,
         );
         break;
-      case VectorStoreQueryMode.HYBRID:
+      case "hybrid":
         azureQueryResultSearch = new AzureQueryResultSearchHybrid(
           query,
           this.#fieldMapping,
@@ -1281,7 +1281,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
           this._searchClient,
         );
         break;
-      case VectorStoreQueryMode.SEMANTIC_HYBRID:
+      case "semantic_hybrid":
         azureQueryResultSearch = new AzureQueryResultSearchSemanticHybrid(
           query,
           this.#fieldMapping,

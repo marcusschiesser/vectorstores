@@ -254,28 +254,77 @@ export class ElasticSearchVectorStore extends BaseVectorStore {
     query: VectorStoreQuery,
     options?: object,
   ): Promise<VectorStoreQueryResult> {
-    if (!query.queryEmbedding) {
-      throw new Error("query embedding is not provided");
-    }
-
     let elasticSearchFilter: Exclude<StoredValue, null>[] = [];
 
     if (query.filters) {
       elasticSearchFilter = [this.toElasticSearchFilter(query.filters)];
     }
 
-    const searchResponse: estypes.SearchResponse<BaseNode> =
-      await this.elasticSearchClient.search({
-        index: this.indexName,
-        size: query.similarityTopK,
-        knn: {
+    const searchRequest: estypes.SearchRequest = {
+      index: this.indexName,
+      size: query.similarityTopK,
+    };
+
+    switch (query.mode) {
+      case "bm25":
+        if (!query.queryStr) {
+          throw new Error("queryStr is required for BM25 mode");
+        }
+        searchRequest.query = {
+          bool: {
+            must: [
+              { match: { [this.textField]: query.queryStr } },
+              ...elasticSearchFilter,
+            ],
+          },
+        };
+        break;
+      case "hybrid":
+        if (!query.queryEmbedding) {
+          throw new Error("queryEmbedding is required for HYBRID mode");
+        }
+        if (!query.queryStr) {
+          throw new Error("queryStr is required for HYBRID mode");
+        }
+        searchRequest.knn = {
           field: this.vectorField,
           query_vector: query.queryEmbedding,
           k: query.similarityTopK,
           num_candidates: query.similarityTopK * 10,
           filter: elasticSearchFilter,
-        },
-      });
+          boost: query.alpha ?? 0.5,
+        };
+        searchRequest.query = {
+          bool: {
+            must: [
+              {
+                match: {
+                  [this.textField]: {
+                    query: query.queryStr,
+                    boost: 1 - (query.alpha ?? 0.5),
+                  },
+                },
+              },
+              ...elasticSearchFilter,
+            ],
+          },
+        };
+        break;
+      default:
+        if (!query.queryEmbedding) {
+          throw new Error("query embedding is not provided");
+        }
+        searchRequest.knn = {
+          field: this.vectorField,
+          query_vector: query.queryEmbedding,
+          k: query.similarityTopK,
+          num_candidates: query.similarityTopK * 10,
+          filter: elasticSearchFilter,
+        };
+    }
+
+    const searchResponse: estypes.SearchResponse<BaseNode> =
+      await this.elasticSearchClient.search(searchRequest);
 
     return this.getVectorSearchQueryResultFromResponse(searchResponse);
   }

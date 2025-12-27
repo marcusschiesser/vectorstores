@@ -10,6 +10,9 @@ import { type BaseNode, jsonToNode } from "../schema/index.js";
 import { exists } from "../storage/FileSystem.js";
 import {
   BaseVectorStore,
+  BM25,
+  combineResults,
+  DEFAULT_HYBRID_PREFETCH_MULTIPLIER,
   FilterOperator,
   type MetadataFilter,
   type MetadataFilters,
@@ -18,17 +21,17 @@ import {
   parsePrimitiveValue,
   type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
+  type VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "./index.js";
 
 const LEARNER_MODES = new Set<VectorStoreQueryMode>([
-  VectorStoreQueryMode.SVM,
-  VectorStoreQueryMode.LINEAR_REGRESSION,
-  VectorStoreQueryMode.LOGISTIC_REGRESSION,
+  "svm",
+  "linear_regression",
+  "logistic_regression",
 ]);
 
-const MMR_MODE = VectorStoreQueryMode.MMR;
+const MMR_MODE = "mmr";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MetadataValue = Record<string, any>;
@@ -246,12 +249,62 @@ export class SimpleVectorStore extends BaseVectorStore {
         nodeIds,
         mmrThreshold,
       );
-    } else if (query.mode === VectorStoreQueryMode.DEFAULT) {
+    } else if (query.mode === "default") {
       [topSimilarities, topIds] = getTopKEmbeddings(
         queryEmbedding,
         embeddings,
         query.similarityTopK,
         nodeIds,
+      );
+    } else if (query.mode === "bm25") {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const results = bm25.search(query.queryStr, query.similarityTopK);
+      topSimilarities = results.map((r) => r.score);
+      topIds = results.map((r) => r.id);
+    } else if (query.mode === "hybrid") {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for HYBRID mode");
+      }
+
+      // Calculate prefetch limit: use configured value or default multiplier
+      const prefetchK =
+        query.hybridPrefetch ??
+        query.similarityTopK * DEFAULT_HYBRID_PREFETCH_MULTIPLIER;
+
+      // Vector search with prefetch
+      const [vSimilarities, vIds] = getTopKEmbeddings(
+        queryEmbedding,
+        embeddings,
+        prefetchK,
+        nodeIds,
+      );
+      const vNodes = vIds.map((id) => this.data.nodesDict[id]!);
+      const vectorResult: VectorStoreQueryResult = {
+        similarities: vSimilarities,
+        ids: vIds,
+        nodes: vNodes,
+      };
+
+      // BM25 search with prefetch
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const bm25Results = bm25.search(query.queryStr, prefetchK);
+      const bm25Result: VectorStoreQueryResult = {
+        similarities: bm25Results.map((r) => r.score),
+        ids: bm25Results.map((r) => r.id),
+        nodes: bm25Results.map((r) => this.data.nodesDict[r.id]!),
+      };
+
+      // Combine and trim to final topK
+      return combineResults(
+        vectorResult,
+        bm25Result,
+        query.alpha ?? 0.5,
+        query.similarityTopK,
       );
     } else {
       throw new Error(`Invalid query mode: ${query.mode}`);
