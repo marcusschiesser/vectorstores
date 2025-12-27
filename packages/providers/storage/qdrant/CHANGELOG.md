@@ -1,5 +1,15 @@
 # @vectorstores/qdrant
 
+## 0.1.6
+
+### Patch Changes
+
+- 925bff9: Add hybrid and BM25 search support to vector stores.
+  SimpleVectorStore now includes a fallback BM25 implementation.
+  Native support added for Weaviate, ElasticSearch, MongoDB Atlas, and PostgreSQL.
+- Updated dependencies [925bff9]
+  - @vectorstores/core@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes

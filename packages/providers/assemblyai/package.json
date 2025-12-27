@@ -1,7 +1,7 @@
 {
   "name": "@vectorstores/assemblyai",
   "description": "AssemblyAI Reader for vectorstores",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "types": "dist/index.d.ts",
   "main": "dist/index.cjs",
