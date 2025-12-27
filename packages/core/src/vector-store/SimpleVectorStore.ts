@@ -12,6 +12,7 @@ import {
   BaseVectorStore,
   BM25,
   combineResults,
+  DEFAULT_HYBRID_PREFETCH_MULTIPLIER,
   FilterOperator,
   type MetadataFilter,
   type MetadataFilters,
@@ -268,11 +269,17 @@ export class SimpleVectorStore extends BaseVectorStore {
       if (!query.queryStr) {
         throw new Error("queryStr is required for HYBRID mode");
       }
-      // Vector search
+
+      // Calculate prefetch limit: use configured value or default multiplier
+      const prefetchK =
+        query.hybridPrefetch ??
+        query.similarityTopK * DEFAULT_HYBRID_PREFETCH_MULTIPLIER;
+
+      // Vector search with prefetch
       const [vSimilarities, vIds] = getTopKEmbeddings(
         queryEmbedding,
         embeddings,
-        query.similarityTopK,
+        prefetchK,
         nodeIds,
       );
       const vNodes = vIds.map((id) => this.data.nodesDict[id]!);
@@ -282,16 +289,17 @@ export class SimpleVectorStore extends BaseVectorStore {
         nodes: vNodes,
       };
 
-      // BM25 search
+      // BM25 search with prefetch
       const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
       const bm25 = new BM25(nodes);
-      const bm25Results = bm25.search(query.queryStr, query.similarityTopK);
+      const bm25Results = bm25.search(query.queryStr, prefetchK);
       const bm25Result: VectorStoreQueryResult = {
         similarities: bm25Results.map((r) => r.score),
         ids: bm25Results.map((r) => r.id),
         nodes: bm25Results.map((r) => this.data.nodesDict[r.id]!),
       };
 
+      // Combine and trim to final topK
       return combineResults(
         vectorResult,
         bm25Result,

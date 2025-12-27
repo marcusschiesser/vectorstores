@@ -97,7 +97,19 @@ export interface VectorStoreQuery<T = unknown> {
   filters?: MetadataFilters | undefined;
   mmrThreshold?: number;
   customParams?: T | undefined;
+  /**
+   * Number of results to fetch from each sub-search (vector/BM25) before
+   * combining in hybrid mode. Higher values find more candidates but are slower.
+   * Default: 5 × similarityTopK
+   */
+  hybridPrefetch?: number;
 }
+
+/**
+ * Default multiplier for hybrid search prefetch.
+ * Each sub-search fetches prefetchMultiplier × similarityTopK results.
+ */
+export const DEFAULT_HYBRID_PREFETCH_MULTIPLIER = 5;
 
 // Supported types of vector stores (for each modality)
 export type VectorStoreByType = {
@@ -168,6 +180,7 @@ export const parseNumberValue = (value?: MetadataFilterValue): number => {
   return value;
 };
 
-export * from "./fallback.js";
+export * from "./bm25.js";
+export * from "./rrf.js";
 export * from "./SimpleVectorStore.js";
 export * from "./utils.js";

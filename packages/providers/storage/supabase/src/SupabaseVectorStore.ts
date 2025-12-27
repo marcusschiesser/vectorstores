@@ -3,6 +3,7 @@ import {
   type BaseNode,
   BaseVectorStore,
   combineResults,
+  DEFAULT_HYBRID_PREFETCH_MULTIPLIER,
   metadataDictToNode,
   type MetadataFilters,
   MetadataMode,
@@ -139,8 +140,14 @@ export class SupabaseVectorStore extends BaseVectorStore {
       case "bm25":
         return this.bm25Search(query);
       case "hybrid": {
-        const vectorResult = await this.vectorSearch(query);
-        const bm25Result = await this.bm25Search(query);
+        // Calculate prefetch limit for sub-searches
+        const prefetchK =
+          query.hybridPrefetch ??
+          query.similarityTopK * DEFAULT_HYBRID_PREFETCH_MULTIPLIER;
+        const prefetchQuery = { ...query, similarityTopK: prefetchK };
+
+        const vectorResult = await this.vectorSearch(prefetchQuery);
+        const bm25Result = await this.bm25Search(prefetchQuery);
         return combineResults(
           vectorResult,
           bm25Result,
