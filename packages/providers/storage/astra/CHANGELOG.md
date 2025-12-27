@@ -1,5 +1,12 @@
 # @vectorstores/astra
 
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [925bff9]
+  - @vectorstores/core@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes
