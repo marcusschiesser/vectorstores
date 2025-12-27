@@ -1,6 +1,6 @@
-import { Document } from "@vectorstores/core";
 import { describe, expect, test } from "vitest";
-import { combineResults, RRF_K, rrfScore } from "../src/vector-store/rrf";
+import { Document } from "../src/schema/index.js";
+import { combineResults, RRF_K, rrfScore } from "../src/vector-store/rrf.js";
 
 describe("Reciprocal Rank Fusion (RRF)", () => {
   describe("rrfScore", () => {

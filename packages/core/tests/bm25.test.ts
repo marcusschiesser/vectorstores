@@ -1,6 +1,6 @@
-import { Document } from "@vectorstores/core";
 import { describe, expect, test } from "vitest";
-import { BM25 } from "../src/vector-store/bm25";
+import { Document } from "../src/schema/index.js";
+import { BM25 } from "../src/vector-store/bm25.js";
 
 describe("BM25", () => {
   const createDoc = (id: string, text: string) =>
@@ -104,8 +104,12 @@ describe("BM25", () => {
       // Doc 1 and 3 contain both terms
       expect(results.length).toBeGreaterThanOrEqual(2);
       // Doc 3 should rank higher as it contains both query terms
-      const doc3Rank = results.findIndex((r) => r.id === "3");
-      const doc2Rank = results.findIndex((r) => r.id === "2");
+      const doc3Rank = results.findIndex(
+        (r: { id: string; score: number }) => r.id === "3",
+      );
+      const doc2Rank = results.findIndex(
+        (r: { id: string; score: number }) => r.id === "2",
+      );
       expect(doc3Rank).toBeLessThan(doc2Rank); // Lower rank = higher position
     });
 
@@ -169,7 +173,7 @@ describe("BM25", () => {
       const rareResults = bm25.search("unicorn", 4);
 
       // The rare term should have a higher score
-      expect(rareResults[0]?.score).toBeGreaterThan(commonResults[0]?.score);
+      expect(rareResults[0]?.score).toBeGreaterThan(commonResults[0]!.score);
     });
   });
 
