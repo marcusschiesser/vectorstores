@@ -12,6 +12,14 @@ Most vector stores in this library support the following search modes:
 - **BM25**: Keyword search using the BM25 algorithm.
 - **Hybrid**: A combination of vector similarity search and BM25 keyword search.
 
+### Scoring Formats
+
+The score returned for each node depends on the search mode used:
+
+- **Default (Vector)**: Scores are based on cosine similarity and range from **0.0 to 1.0**, where 1.0 indicates a perfect semantic match.
+- **BM25**: Scores are calculated using the BM25 algorithm. These scores are **unbounded** (can be greater than 1.0) and represent keyword relevance. Higher scores indicate better matches.
+- **Hybrid**: Scores are calculated using Reciprocal Rank Fusion (RRF). RRF scores are typically **very small** (e.g., a rank 1 result has a score of $\approx 0.0164$ or $1.64\%$). This method is robust as it only considers the rank position from each sub-search, not the raw similarity or BM25 scores.
+
 You can specify the search mode in the `query` method of the vector store:
 
 ```typescript
