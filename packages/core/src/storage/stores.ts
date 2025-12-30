@@ -1,4 +1,3 @@
-import type { TextEmbedFunc } from "../embeddings/index.js";
 import { ModalityType } from "../schema/index.js";
 import type {
   BaseVectorStore,
@@ -9,7 +8,6 @@ import { SimpleVectorStore } from "../vector-store/SimpleVectorStore.js";
 export interface CreateVectorStoresOptions {
   vectorStore?: BaseVectorStore | undefined;
   persistDir?: string | undefined;
-  embedFunc?: TextEmbedFunc | undefined;
 }
 
 /**
@@ -23,14 +21,11 @@ export async function createVectorStores(
   const vectorStores: VectorStoreByType = {};
   if (!options.persistDir) {
     vectorStores[ModalityType.TEXT] =
-      options.vectorStore ??
-      new SimpleVectorStore({ embedFunc: options.embedFunc });
+      options.vectorStore ?? new SimpleVectorStore();
   } else {
     vectorStores[ModalityType.TEXT] =
       options.vectorStore ??
-      (await SimpleVectorStore.fromPersistDir(options.persistDir, undefined, {
-        embedFunc: options.embedFunc,
-      }));
+      (await SimpleVectorStore.fromPersistDir(options.persistDir));
   }
   return vectorStores;
 }

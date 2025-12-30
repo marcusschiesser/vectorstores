@@ -4,7 +4,6 @@ import {
   metadataDictToNode,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -109,9 +108,9 @@ export class AzureCosmosDBMongoDBVectorStore extends BaseVectorStore {
       dbName: string;
       collectionName: string;
       indexedMetadataFields?: string[];
-    } & VectorStoreBaseParams,
+    },
   ) {
-    super(init);
+    super();
     if (init.mongodbClient) {
       this.mongodbClient = init.mongodbClient;
     } else {

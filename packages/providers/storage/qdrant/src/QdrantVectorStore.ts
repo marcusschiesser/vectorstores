@@ -8,7 +8,6 @@ import {
   metadataDictToNode,
   nodeToMetadata,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -30,7 +29,7 @@ type QdrantParams = {
   url?: string;
   apiKey?: string;
   batchSize?: number;
-} & VectorStoreBaseParams;
+};
 
 /**
  * Qdrant vector store.
@@ -59,9 +58,8 @@ export class QdrantVectorStore extends BaseVectorStore {
     url,
     apiKey,
     batchSize,
-    ...init
   }: QdrantParams) {
-    super(init);
+    super();
     if (!client && !url) {
       if (!url) {
         throw new Error("QdrantVectorStore requires url and collectionName");

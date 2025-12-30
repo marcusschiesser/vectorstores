@@ -2,7 +2,6 @@ import {
   BaseVectorStore,
   type MetadataFilter,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -17,7 +16,7 @@ type UpstashParams = {
   token?: string;
   endpoint?: string;
   maxBatchSize?: number;
-} & VectorStoreBaseParams;
+};
 
 /**
  * Provides support for writing and querying vector data in Upstash.
@@ -41,7 +40,7 @@ export class UpstashVectorStore extends BaseVectorStore {
    * ```
    */
   constructor(params?: UpstashParams) {
-    super(params);
+    super();
     this.namespace = params?.namespace ?? "";
     this.maxBatchSize = params?.maxBatchSize ?? 1000;
     const token = params?.token ?? getEnv("UPSTASH_VECTOR_REST_TOKEN");

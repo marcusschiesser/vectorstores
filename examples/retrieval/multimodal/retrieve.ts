@@ -4,7 +4,7 @@ import {
   TextNode,
   VectorStoreIndex,
 } from "@vectorstores/core";
-import { getVectorStores } from "./storage";
+import { getEmbeddings, getVectorStores } from "./storage";
 
 // Update chunk size and overlap
 Settings.chunkSize = 512;
@@ -14,8 +14,8 @@ async function main() {
   // retrieve documents using the index
   const vectorStores = await getVectorStores();
   const index = await VectorStoreIndex.init({
-    nodes: [],
     vectorStores,
+    embeddings: getEmbeddings(),
   });
   const retriever = index.asRetriever({
     topK: { TEXT: 1, IMAGE: 3, AUDIO: 0 },

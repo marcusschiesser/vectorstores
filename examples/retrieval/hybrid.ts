@@ -28,7 +28,7 @@ const documents = [
 
 async function main() {
   const embedFunc = getOpenAIEmbedding();
-  const vectorStore = new SimpleVectorStore({ embedFunc });
+  const vectorStore = new SimpleVectorStore();
   const index = await VectorStoreIndex.fromDocuments(documents, {
     vectorStore,
     embedFunc,

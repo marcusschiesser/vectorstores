@@ -1,21 +1,20 @@
 import {
-  BaseEmbedding,
   Document,
+  embeddings,
   IngestionPipeline,
+  ModalityType,
   SentenceSplitter,
   VectorStoreIndex,
 } from "@vectorstores/core";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { useOpenAIEmbedding } from "../shared/utils/embedding";
+import { getOpenAIEmbedding } from "../shared/utils/embedding";
 import { formatRetrieverResponse } from "../shared/utils/format-response";
 import { ensureOpenAIKey } from "../shared/utils/runtime";
 
 async function main() {
   if (!ensureOpenAIKey()) return;
-  // Update embed model
-  useOpenAIEmbedding("text-embedding-3-small");
 
   // Load essay from abramov.txt in Node
   const filePath = fileURLToPath(
@@ -28,7 +27,9 @@ async function main() {
   const pipeline = new IngestionPipeline({
     transformations: [
       new SentenceSplitter({ chunkSize: 1024, chunkOverlap: 20 }),
-      new BaseEmbedding(),
+      embeddings({
+        [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
+      }),
     ],
   });
   console.time("Pipeline Run Time");

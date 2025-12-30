@@ -375,7 +375,20 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
 
   constructor(init: ImageNodeParams<T>) {
     super(init);
-    const { image } = init;
+    let { image } = init;
+
+    // Reconstruct image URL from file path if image was lost during serialization
+    // (Blobs serialize to {} in JSON)
+    if (
+      !image ||
+      (typeof image === "object" &&
+        !(image instanceof Blob) &&
+        !(image instanceof URL))
+    ) {
+      const absPath = path.resolve(this.id_);
+      image = new URL(`file://${absPath}`);
+    }
+
     this.image = image;
   }
 
@@ -403,9 +416,9 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
     } else if (typeof this.image === "string") {
       hashFunction.update(this.image);
     } else {
-      throw new Error(
-        `Unknown image type: ${typeof this.image}. Can't calculate hash`,
-      );
+      // Handle case where Blob was serialized to {} during JSON persistence
+      // Fall back to using the node ID for hash (same as Blob case)
+      hashFunction.update(this.id_);
     }
 
     return hashFunction.digest();
@@ -422,10 +435,6 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
 }
 
 export class ImageDocument<T extends Metadata = Metadata> extends ImageNode<T> {
-  constructor(init: ImageNodeParams<T>) {
-    super(init);
-  }
-
   get type() {
     return ObjectType.IMAGE_DOCUMENT;
   }

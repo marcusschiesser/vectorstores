@@ -15,7 +15,6 @@ import {
   type FilterOperator,
   type MetadataFilter,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -27,7 +26,7 @@ type PineconeParams = {
   namespace?: string;
   textKey?: string;
   apiKey?: string;
-} & VectorStoreBaseParams;
+};
 
 /**
  * Provides support for writing and querying vector data in Pinecone.
@@ -52,7 +51,7 @@ export class PineconeVectorStore extends BaseVectorStore {
   apiKey: string;
 
   constructor(params?: PineconeParams) {
-    super(params);
+    super();
     this.indexName =
       params?.indexName ?? getEnv("PINECONE_INDEX_NAME") ?? "llama";
     this.namespace = params?.namespace ?? getEnv("PINECONE_NAMESPACE") ?? "";

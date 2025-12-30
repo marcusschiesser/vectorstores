@@ -1,35 +1,48 @@
 /**
- * This example demonstrates setting up vector stores with custom embeddings
- * using @huggingface/transformers and Settings.embedFunc.
+ * This example demonstrates setting up vector stores with a unified multimodal
+ * embedFunc using @huggingface/transformers and CLIP.
  */
 
 import {
   AutoProcessor,
+  AutoTokenizer,
+  CLIPTextModelWithProjection,
   CLIPVisionModelWithProjection,
   RawImage,
 } from "@huggingface/transformers";
-import type { VectorStoreByType } from "@vectorstores/core";
-import {
-  BaseEmbedding,
-  ModalityType,
-  SimpleVectorStore,
-} from "@vectorstores/core";
+import type { ImageType, VectorStoreByType } from "@vectorstores/core";
+import { ModalityType, SimpleVectorStore } from "@vectorstores/core";
 import { path } from "@vectorstores/env";
 
-// Model ID for CLIP
 const MODEL_ID = "Xenova/clip-vit-base-patch32";
 
-// Initialize models lazily
+// Lazy-loaded models
 let visionModel: CLIPVisionModelWithProjection | null = null;
+let textModel: CLIPTextModelWithProjection | null = null;
 let processor: Awaited<
   ReturnType<typeof AutoProcessor.from_pretrained>
+> | null = null;
+let tokenizer: Awaited<
+  ReturnType<typeof AutoTokenizer.from_pretrained>
 > | null = null;
 
 async function getVisionModel() {
   if (!visionModel) {
-    visionModel = await CLIPVisionModelWithProjection.from_pretrained(MODEL_ID);
+    visionModel = await CLIPVisionModelWithProjection.from_pretrained(
+      MODEL_ID,
+      { dtype: "q8" },
+    );
   }
   return visionModel;
+}
+
+async function getTextModel() {
+  if (!textModel) {
+    textModel = await CLIPTextModelWithProjection.from_pretrained(MODEL_ID, {
+      dtype: "q8",
+    });
+  }
+  return textModel;
 }
 
 async function getProcessor() {
@@ -40,27 +53,82 @@ async function getProcessor() {
   return processor;
 }
 
-// Create a custom embedding class for CLIP image embeddings
-class ClipImageEmbedding extends BaseEmbedding {
-  async getImageEmbedding(imageUrl: string | URL): Promise<number[]> {
-    const model = await getVisionModel();
-    const proc = await getProcessor();
-
-    const image = await RawImage.fromURL(imageUrl.toString());
-    const imageInputs = await proc(image);
-    const { image_embeds } = await model(imageInputs);
-
-    return Array.from(image_embeds.data as Float32Array);
+async function getTokenizer() {
+  if (!tokenizer) {
+    tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
   }
+  return tokenizer;
 }
 
-// set up vector stores, one for text, the other for images
+/**
+ * Batch embed multiple texts using CLIP text model
+ */
+export async function getTextEmbeddings(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  const model = await getTextModel();
+  const tok = await getTokenizer();
+
+  const textInputs = await tok(texts, { padding: true, truncation: true });
+  const { text_embeds } = await model(textInputs);
+
+  // text_embeds.dims = [batch_size, embedding_dim]
+  const embeddingDim = text_embeds.dims[1];
+  const results: number[][] = [];
+  for (let i = 0; i < texts.length; i++) {
+    const start = i * embeddingDim;
+    results.push(
+      Array.from(text_embeds.data.slice(start, start + embeddingDim)),
+    );
+  }
+  return results;
+}
+
+/**
+ * Batch embed multiple images using CLIP vision model
+ */
+export async function getImageEmbeddings(
+  imageUrls: ImageType[],
+): Promise<number[][]> {
+  if (imageUrls.length === 0) return [];
+
+  const model = await getVisionModel();
+  const proc = await getProcessor();
+
+  // Process images in parallel
+  const images = await Promise.all(
+    imageUrls.map((url) => {
+      if (url instanceof Blob) return RawImage.fromBlob(url);
+      return RawImage.fromURL(url);
+    }),
+  );
+  const imageInputs = await proc(images);
+  const { image_embeds } = await model(imageInputs);
+
+  // image_embeds.dims = [batch_size, embedding_dim]
+  const embeddingDim = image_embeds.dims[1];
+  const results: number[][] = [];
+  for (let i = 0; i < imageUrls.length; i++) {
+    const start = i * embeddingDim;
+    results.push(
+      Array.from(image_embeds.data.slice(start, start + embeddingDim)),
+    );
+  }
+  return results;
+}
+
 export async function getVectorStores(): Promise<VectorStoreByType> {
   return {
     [ModalityType.TEXT]: await SimpleVectorStore.fromPersistDir("storage"),
     [ModalityType.IMAGE]: await SimpleVectorStore.fromPersistDir(
       path.join("storage", "images"),
-      new ClipImageEmbedding(),
     ),
+  };
+}
+
+export function getEmbeddings() {
+  return {
+    [ModalityType.TEXT]: getTextEmbeddings,
+    [ModalityType.IMAGE]: getImageEmbeddings,
   };
 }

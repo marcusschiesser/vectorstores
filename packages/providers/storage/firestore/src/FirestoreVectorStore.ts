@@ -15,7 +15,6 @@ import {
   nodeToMetadata,
   type MetadataFilter,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -43,7 +42,7 @@ type FirestoreParams = {
   customCollectionReference?: (
     rootCollection: CollectionReference,
   ) => CollectionReference;
-} & VectorStoreBaseParams;
+};
 
 const DEFAULT_BATCH_SIZE = 500;
 
@@ -111,9 +110,8 @@ export class FirestoreVectorStore extends BaseVectorStore<Firestore> {
     batchSize = DEFAULT_BATCH_SIZE,
     distanceMeasure = DistanceMeasure.COSINE,
     customCollectionReference,
-    ...init
   }: FirestoreParams) {
-    super(init);
+    super();
     this.collectionName = collectionName;
     this.batchSize = batchSize;
     this.distanceMeasure = distanceMeasure;

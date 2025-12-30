@@ -1,4 +1,8 @@
-import { BaseEmbedding, type TextEmbedFunc } from "../../embeddings/index.js";
+import {
+  embeddings,
+  type EmbeddingsByType,
+  type TextEmbedFunc,
+} from "../../embeddings/index.js";
 import { DEFAULT_SIMILARITY_TOP_K } from "../../embeddings/utils.js";
 import { Settings } from "../../global/index.js";
 import {
@@ -13,13 +17,11 @@ import { BaseRetriever } from "../../retriever/index.js";
 import {
   type BaseNode,
   type Document,
-  ImageNode,
   ModalityType,
   type NodeWithScore,
-  splitNodesByType,
 } from "../../schema/index.js";
 import { createVectorStores } from "../../storage/stores.js";
-import { extractText } from "../../utils/index.js";
+import { extractSingleText } from "../../utils/llms.js";
 import type {
   BaseVectorStore,
   MetadataFilters,
@@ -28,69 +30,55 @@ import type {
   VectorStoreQueryMode,
   VectorStoreQueryResult,
 } from "../../vector-store/index.js";
-import { BaseIndex, type BaseIndexInit } from "../BaseIndex.js";
+import { BaseIndex } from "../BaseIndex.js";
 
-export interface VectorIndexOptions {
+export type VectorIndexOptions = {
   nodes?: BaseNode[] | undefined;
   vectorStore?: BaseVectorStore | undefined;
   vectorStores?: VectorStoreByType | undefined;
   persistDir?: string | undefined;
   logProgress?: boolean | undefined;
   progressCallback?: ((progress: number, total: number) => void) | undefined;
-  // @deprecated: use embedFunc instead
-  embedModel?: BaseEmbedding | undefined;
+  /** Text embedding function. Falls back to Settings.embedFunc if not provided. */
   embedFunc?: TextEmbedFunc | undefined;
-}
-
-export interface VectorIndexConstructorProps extends BaseIndexInit {
-  // @deprecated: use embedFunc instead
-  embedModel?: BaseEmbedding | undefined;
-  embedFunc?: TextEmbedFunc | undefined;
-}
-
-export type VectorIndexChatEngineOptions = {
-  retriever?: BaseRetriever;
-  similarityTopK?: number;
-  preFilters?: MetadataFilters;
-  customParams?: unknown;
+  /** Map of modality to embedding function. Overrides embedFunc for specified modalities. */
+  embeddings?: EmbeddingsByType | undefined;
 };
 
 /**
  * The VectorStoreIndex, an index that stores the nodes only according to their vector embeddings.
  */
 export class VectorStoreIndex extends BaseIndex {
-  /** @deprecated: use embedFunc instead */
-  embedModel?: BaseEmbedding | undefined;
-
-  private constructor(init: VectorIndexConstructorProps) {
-    super(init);
-    if (init.embedFunc) {
-      this.embedModel = new BaseEmbedding({ embedFunc: init.embedFunc });
-    } else {
-      this.embedModel = init.embedModel ?? new BaseEmbedding();
-    }
-  }
-
   /**
    * The async init function creates a new VectorStoreIndex.
    * @param options
    * @returns
    */
   public static async init(
-    options: VectorIndexOptions,
+    options: VectorIndexOptions = {},
   ): Promise<VectorStoreIndex> {
     const vectorStores =
       options.vectorStores ??
       (await createVectorStores({
         vectorStore: options.vectorStore,
         persistDir: options.persistDir,
-        embedFunc: options.embedFunc,
       }));
+
+    // Resolve embeddings: explicit embeddings > embedFunc > Settings.embedFunc
+    const textEmbedFunc = options.embedFunc ?? Settings.embedFunc ?? undefined;
+    const embeddings: EmbeddingsByType = options.embeddings ?? {
+      ...(textEmbedFunc ? { [ModalityType.TEXT]: textEmbedFunc } : {}),
+    };
+
+    if (!embeddings[ModalityType.TEXT]) {
+      throw new Error(
+        "No text embedding function provided. Pass embedFunc, embeddings, or set Settings.embedFunc.",
+      );
+    }
 
     const index = new VectorStoreIndex({
       vectorStores,
-      embedModel: options.embedModel,
-      embedFunc: options.embedFunc,
+      embeddings,
     });
 
     if (options.nodes) {
@@ -101,37 +89,6 @@ export class VectorStoreIndex extends BaseIndex {
       });
     }
     return index;
-  }
-
-  /**
-   * Calculates the embeddings for the given nodes.
-   *
-   * @param nodes - An array of BaseNode objects representing the nodes for which embeddings are to be calculated.
-   * @param {Object} [options] - An optional object containing additional parameters.
-   *   @param {boolean} [options.logProgress] - A boolean indicating whether to log progress to the console (useful for debugging).
-   */
-  async getNodeEmbeddingResults(
-    nodes: BaseNode[],
-    options?: {
-      logProgress?: boolean | undefined;
-      progressCallback?:
-        | ((progress: number, total: number) => void)
-        | undefined;
-    },
-  ): Promise<BaseNode[]> {
-    const nodeMap = splitNodesByType(nodes);
-    for (const type in nodeMap) {
-      const nodes = nodeMap[type as ModalityType];
-      const embedModel =
-        this.vectorStores[type as ModalityType]?.embedModel ?? this.embedModel;
-      if (embedModel && nodes) {
-        await embedModel(nodes, {
-          logProgress: options?.logProgress,
-          progressCallback: options?.progressCallback,
-        });
-      }
-    }
-    return nodes;
   }
 
   /**
@@ -168,9 +125,8 @@ export class VectorStoreIndex extends BaseIndex {
       (await createVectorStores({
         vectorStore: args.vectorStore,
         persistDir: args.persistDir,
-        embedFunc: args.embedFunc,
       }));
-    args.docStoreStrategy = args.docStoreStrategy ?? DocStoreStrategy.UPSERTS;
+    const docStoreStrategy = args.docStoreStrategy ?? DocStoreStrategy.UPSERTS;
 
     if (args.logProgress) {
       console.log("Using node parser on documents...");
@@ -188,30 +144,44 @@ export class VectorStoreIndex extends BaseIndex {
       });
 
     // Parse documents into nodes (no deduplication here)
-    args.nodes = await runTransformations(documents, [nodeParser], {});
+    const nodes = await runTransformations(documents, [nodeParser], {});
 
     if (args.logProgress) {
       console.log("Finished parsing documents.");
     }
 
+    // Resolve embeddings: explicit embeddings > embedFunc > Settings.embedFunc
+    const textEmbedFunc = args.embedFunc ?? Settings.embedFunc ?? undefined;
+    const embeddings: EmbeddingsByType = args.embeddings ?? {
+      ...(textEmbedFunc ? { [ModalityType.TEXT]: textEmbedFunc } : {}),
+    };
+
+    if (!embeddings[ModalityType.TEXT]) {
+      throw new Error(
+        "No text embedding function provided. Pass embedFunc, embeddings, or set Settings.embedFunc.",
+      );
+    }
+
     // Create the index - deduplication happens in insertNodes via addNodesToVectorStores
     const index = new VectorStoreIndex({
       vectorStores,
-      embedModel: args.embedModel,
-      embedFunc: args.embedFunc,
+      embeddings,
     });
 
     // Insert nodes with embeddings and deduplication
-    await index.insertNodes(args.nodes, {
+    await index.insertNodes(nodes, {
       logProgress: args.logProgress,
       progressCallback: args.progressCallback,
-      docStoreStrategy: args.docStoreStrategy,
+      docStoreStrategy,
     });
 
     return index;
   }
 
-  static async fromVectorStores(vectorStores: VectorStoreByType) {
+  static async fromVectorStores(
+    vectorStores: VectorStoreByType,
+    embeddings: EmbeddingsByType,
+  ) {
     if (!vectorStores[ModalityType.TEXT]?.storesText) {
       throw new Error(
         "Cannot initialize from a vector store that does not store text",
@@ -221,15 +191,22 @@ export class VectorStoreIndex extends BaseIndex {
     const index = await VectorStoreIndex.init({
       nodes: [],
       vectorStores,
+      embeddings,
     });
 
     return index;
   }
 
-  static async fromVectorStore(vectorStore: BaseVectorStore) {
-    return VectorStoreIndex.fromVectorStores({
-      [ModalityType.TEXT]: vectorStore,
-    });
+  static async fromVectorStore(
+    vectorStore: BaseVectorStore,
+    embeddings: EmbeddingsByType,
+  ) {
+    return VectorStoreIndex.fromVectorStores(
+      {
+        [ModalityType.TEXT]: vectorStore,
+      },
+      embeddings,
+    );
   }
 
   asRetriever(
@@ -251,7 +228,9 @@ export class VectorStoreIndex extends BaseIndex {
     if (!nodes || nodes.length === 0) {
       return;
     }
-    nodes = await this.getNodeEmbeddingResults(nodes, options);
+    // Add embeddings to nodes using the embeddings transformation
+    const embeddingsTransform = embeddings(this.embeddings);
+    nodes = await embeddingsTransform(nodes);
     await addNodesToVectorStores(
       nodes,
       this.vectorStores,
@@ -283,18 +262,8 @@ type TopKMap = { [P in ModalityType]: number };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OmitIndex<T> = T extends { index: any } ? Omit<T, "index"> : never;
 
-const modesRequiringQueryString = new Set<VectorStoreQueryMode>([
-  "bm25",
-  "hybrid",
-  "semantic_hybrid",
-]);
-
 function requiresQueryEmbedding(mode: VectorStoreQueryMode) {
   return mode !== "bm25";
-}
-
-function requiresQueryString(mode: VectorStoreQueryMode) {
-  return modesRequiringQueryString.has(mode);
 }
 
 export type VectorIndexRetrieverOptions = {
@@ -370,30 +339,37 @@ export class VectorIndexRetriever extends BaseRetriever {
     customParams?: unknown,
   ): Promise<NodeWithScore[]> {
     // convert string message to multi-modal format
-
-    let queryStr = query;
     if (typeof query === "string") {
-      queryStr = query;
-      query = [{ type: "text", text: queryStr }];
-    } else {
-      queryStr = extractText(query);
+      query = [{ type: "text", text: query }];
     }
-    // overwrite embed model if specified, otherwise use the one from the vector store
-    const embedModel = this.index.embedModel ?? vectorStore.embedModel;
     const queryMode = this.queryMode ?? "default";
     const needsEmbedding = requiresQueryEmbedding(queryMode);
-    const needsQueryString = requiresQueryString(queryMode);
     let nodes: NodeWithScore[] = [];
     // query each content item (e.g. text or image) separately
     for (const item of query) {
       let queryEmbedding: number[] | null = null;
       if (needsEmbedding) {
-        if (!embedModel) {
-          throw new Error(
-            "VectorIndexRetriever requires an embedding model for this query mode.",
-          );
+        // For text queries, always use TEXT embedFunc (required for CLIP multimodal search)
+        if (item.type === "text" && "text" in item) {
+          const textEmbedFunc = this.index.embeddings?.[ModalityType.TEXT];
+          if (!textEmbedFunc) {
+            throw new Error(
+              "No TEXT embedding function provided. Pass embeddings option to VectorStoreIndex.",
+            );
+          }
+          const embeddings = await textEmbedFunc([item.text]);
+          queryEmbedding = embeddings[0] ?? null;
+        } else if (item.type === "image_url" && "image_url" in item) {
+          const imageEmbedFunc = this.index.embeddings?.[ModalityType.IMAGE];
+          if (!imageEmbedFunc) {
+            throw new Error(
+              "No IMAGE embedding function provided. Pass embeddings option to VectorStoreIndex.",
+            );
+          }
+          const embeddings = await imageEmbedFunc([item.image_url.url]);
+          queryEmbedding = embeddings[0] ?? null;
         }
-        queryEmbedding = await embedModel.getQueryEmbedding(item);
+
         if (!queryEmbedding) {
           continue;
         }
@@ -404,17 +380,10 @@ export class VectorIndexRetriever extends BaseRetriever {
         mode: queryMode,
         filters: this.filters ?? filters ?? undefined,
         customParams: this.customParams ?? customParams ?? undefined,
+        queryEmbedding: queryEmbedding ?? undefined,
+        queryStr: extractSingleText(item) ?? undefined,
+        alpha: this.alpha ?? undefined,
       };
-
-      if (needsEmbedding && queryEmbedding) {
-        vectorQuery.queryEmbedding = queryEmbedding;
-      }
-      if (needsQueryString) {
-        vectorQuery.queryStr = queryStr;
-      }
-      if (this.alpha !== undefined) {
-        vectorQuery.alpha = this.alpha;
-      }
 
       const result = await vectorStore.query(vectorQuery);
       nodes = nodes.concat(this.buildNodeListFromQueryResult(result));
@@ -430,12 +399,6 @@ export class VectorIndexRetriever extends BaseRetriever {
         throw new Error(
           `Node not found in query result for id ${result.ids[i]}`,
         );
-      }
-
-      // XXX: Hack, if it's an image node, we reconstruct the image from the URL
-      // Alternative: Store image in doc store and retrieve it here
-      if (node instanceof ImageNode) {
-        node.image = node.getUrl();
       }
 
       nodesWithScores.push({
