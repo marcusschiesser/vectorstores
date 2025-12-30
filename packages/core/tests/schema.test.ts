@@ -36,6 +36,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/image.jpg",
       image: {} as unknown as ImageType, // Empty object from JSON serialization
       text: "An image",
+      metadata: { file_path: "path/to/image.jpg" },
     });
 
     expect(imageNode.image).toBeInstanceOf(URL);
@@ -48,6 +49,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/photo.png",
       image: undefined as unknown as ImageType,
       text: "A photo",
+      metadata: { file_path: "path/to/photo.png" },
     });
 
     expect(imageNode.image).toBeInstanceOf(URL);
@@ -94,7 +96,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/image.jpg",
       image: {}, // Empty object from serialization
       text: "Test image",
-      metadata: {},
+      metadata: { file_path: "path/to/image.jpg" },
       excludedEmbedMetadataKeys: [],
       excludedLlmMetadataKeys: [],
       relationships: {},
@@ -112,7 +114,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/document.jpg",
       image: {}, // Empty object from serialization
       text: "Test document",
-      metadata: {},
+      metadata: { file_path: "path/to/document.jpg" },
       excludedEmbedMetadataKeys: [],
       excludedLlmMetadataKeys: [],
       relationships: {},
@@ -129,7 +131,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/image.jpg",
       image: new Blob(["test"], { type: "image/png" }),
       text: "Original image",
-      metadata: { source: "test" },
+      metadata: { source: "test", file_path: "path/to/image.jpg" },
     });
 
     // Serialize to JSON (Blob becomes {})
@@ -150,6 +152,7 @@ describe("ImageNode deserialization", () => {
       id_: "path/to/image.jpg",
       image: {} as unknown as ImageType, // Empty object from JSON serialization
       text: "An image",
+      metadata: { file_path: "path/to/image.jpg" },
     });
 
     // Should not throw
