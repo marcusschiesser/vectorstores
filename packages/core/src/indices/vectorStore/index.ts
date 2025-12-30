@@ -257,8 +257,8 @@ export class VectorStoreIndex extends BaseIndex {
  * VectorIndexRetriever retrieves nodes from a VectorIndex.
  */
 
-// TopKMap type now only includes TEXT and IMAGE modalities
-type TopKMap = { [P in ModalityType]: number };
+// TopKMap type - all modalities are optional
+type TopKMap = Partial<{ [P in ModalityType]: number }>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OmitIndex<T> = T extends { index: any } ? Omit<T, "index"> : never;
@@ -284,7 +284,7 @@ export type VectorIndexRetrieverOptions = {
 
 export class VectorIndexRetriever extends BaseRetriever {
   index: VectorStoreIndex;
-  topK: TopKMap;
+  topK: { [P in ModalityType]: number };
 
   filters?: MetadataFilters | undefined;
   queryMode?: VectorStoreQueryMode | undefined;
@@ -294,14 +294,21 @@ export class VectorIndexRetriever extends BaseRetriever {
     super();
     this.index = options.index;
     this.queryMode = options.mode ?? "default";
+    const defaultTextTopK =
+      "similarityTopK" in options && options.similarityTopK
+        ? options.similarityTopK
+        : DEFAULT_SIMILARITY_TOP_K;
+
     if ("topK" in options && options.topK) {
-      this.topK = options.topK;
+      // Merge provided topK with defaults
+      this.topK = {
+        text: options.topK.text ?? defaultTextTopK,
+        image: options.topK.image ?? DEFAULT_SIMILARITY_TOP_K,
+        audio: options.topK.audio ?? DEFAULT_SIMILARITY_TOP_K,
+      };
     } else {
       this.topK = {
-        text:
-          "similarityTopK" in options && options.similarityTopK
-            ? options.similarityTopK
-            : DEFAULT_SIMILARITY_TOP_K,
+        text: defaultTextTopK,
         image: DEFAULT_SIMILARITY_TOP_K,
         audio: DEFAULT_SIMILARITY_TOP_K,
       };
@@ -361,7 +368,7 @@ export class VectorIndexRetriever extends BaseRetriever {
       }
 
       const vectorQuery: VectorStoreQuery = {
-        similarityTopK: this.topK[type]!,
+        similarityTopK: this.topK[type] ?? DEFAULT_SIMILARITY_TOP_K,
         mode: queryMode,
         filters: this.filters ?? filters ?? undefined,
         customParams: this.customParams ?? customParams ?? undefined,
