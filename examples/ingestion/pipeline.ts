@@ -1,10 +1,10 @@
 import {
   Document,
-  embeddings,
   IngestionPipeline,
   ModalityType,
   SentenceSplitter,
   VectorStoreIndex,
+  calcEmbeddings,
 } from "@vectorstores/core";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -21,25 +21,28 @@ async function main() {
     new URL("../shared/data/abramov.txt", import.meta.url),
   );
   const essay = await fs.readFile(filePath, "utf-8");
+  const embeddings = {
+    [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
+  };
 
   // Create Document object with essay
   const document = new Document({ text: essay, id_: filePath });
   const pipeline = new IngestionPipeline({
     transformations: [
       new SentenceSplitter({ chunkSize: 1024, chunkOverlap: 20 }),
-      embeddings({
-        [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
-      }),
+      calcEmbeddings(embeddings),
     ],
   });
+
   console.time("Pipeline Run Time");
-
   const nodes = await pipeline.run({ documents: [document] });
-
   console.timeEnd("Pipeline Run Time");
 
   // initialize the VectorStoreIndex from nodes
-  const index = await VectorStoreIndex.init({ nodes });
+  const index = await VectorStoreIndex.init({
+    nodes,
+    embeddings,
+  });
 
   // Retrieve from the index
   const retriever = index.asRetriever();

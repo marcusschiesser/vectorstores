@@ -1,5 +1,5 @@
 import {
-  embeddings,
+  calcEmbeddings,
   type EmbeddingsByType,
   type TextEmbedFunc,
 } from "../../embeddings/index.js";
@@ -229,7 +229,7 @@ export class VectorStoreIndex extends BaseIndex {
       return;
     }
     // Add embeddings to nodes using the embeddings transformation
-    const embeddingsTransform = embeddings(this.embeddings);
+    const embeddingsTransform = calcEmbeddings(this.embeddings);
     nodes = await embeddingsTransform(nodes);
     await addNodesToVectorStores(
       nodes,

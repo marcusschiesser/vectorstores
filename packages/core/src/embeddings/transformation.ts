@@ -30,7 +30,7 @@ import {
  * });
  * ```
  */
-export function embeddings(
+export function calcEmbeddings(
   embeddingFuncs: EmbeddingsByType,
 ): TransformComponent<Promise<BaseNode[]>> {
   return new TransformComponent(async (nodes: BaseNode[]) => {
