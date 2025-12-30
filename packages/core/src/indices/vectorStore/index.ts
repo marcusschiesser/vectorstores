@@ -1,5 +1,6 @@
 import {
   calcEmbeddings,
+  calculateQueryEmbedding,
   type EmbeddingsByType,
   type TextEmbedFunc,
 } from "../../embeddings/index.js";
@@ -349,26 +350,10 @@ export class VectorIndexRetriever extends BaseRetriever {
     for (const item of query) {
       let queryEmbedding: number[] | null = null;
       if (needsEmbedding) {
-        // For text queries, always use TEXT embedFunc (required for CLIP multimodal search)
-        if (item.type === "text" && "text" in item) {
-          const textEmbedFunc = this.index.embeddings?.[ModalityType.TEXT];
-          if (!textEmbedFunc) {
-            throw new Error(
-              "No TEXT embedding function provided. Pass embeddings option to VectorStoreIndex.",
-            );
-          }
-          const embeddings = await textEmbedFunc([item.text]);
-          queryEmbedding = embeddings[0] ?? null;
-        } else if (item.type === "image_url" && "image_url" in item) {
-          const imageEmbedFunc = this.index.embeddings?.[ModalityType.IMAGE];
-          if (!imageEmbedFunc) {
-            throw new Error(
-              "No IMAGE embedding function provided. Pass embeddings option to VectorStoreIndex.",
-            );
-          }
-          const embeddings = await imageEmbedFunc([item.image_url.url]);
-          queryEmbedding = embeddings[0] ?? null;
-        }
+        queryEmbedding = await calculateQueryEmbedding(
+          item,
+          this.index.embeddings,
+        );
 
         if (!queryEmbedding) {
           continue;
