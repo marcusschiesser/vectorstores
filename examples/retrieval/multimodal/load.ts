@@ -1,7 +1,7 @@
 import { VectorStoreIndex } from "@vectorstores/core";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import path from "path";
-import { getEmbeddings, getVectorStores } from "./storage";
+import { getEmbeddings } from "./embeddings";
 
 async function main() {
   console.time(`Generate storage`);
@@ -10,7 +10,7 @@ async function main() {
     directoryPath: path.join("shared", "data", "multimodal"),
   });
   await VectorStoreIndex.fromDocuments(documents, {
-    vectorStores: await getVectorStores(),
+    persistDir: "storage",
     embeddings: getEmbeddings(),
   });
   console.timeEnd(`Generate storage`);

@@ -1,12 +1,11 @@
 import { VectorStoreIndex } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
-import { getEmbeddings, getVectorStores } from "./storage";
+import { getEmbeddings } from "./embeddings";
 
 async function main() {
   // retrieve documents using the index
-  const vectorStores = await getVectorStores();
   const index = await VectorStoreIndex.init({
-    vectorStores,
+    persistDir: "storage",
     embeddings: getEmbeddings(),
   });
   const retriever = index.asRetriever({

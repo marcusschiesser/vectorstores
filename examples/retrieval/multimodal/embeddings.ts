@@ -10,9 +10,7 @@ import {
   CLIPVisionModelWithProjection,
   RawImage,
 } from "@huggingface/transformers";
-import type { ImageType, VectorStoreByType } from "@vectorstores/core";
-import { SimpleVectorStore } from "@vectorstores/core";
-import { path } from "@vectorstores/env";
+import type { ImageType } from "@vectorstores/core";
 
 const MODEL_ID = "Xenova/clip-vit-base-patch32";
 
@@ -115,15 +113,6 @@ export async function getImageEmbeddings(
     );
   }
   return results;
-}
-
-export async function getVectorStores(): Promise<VectorStoreByType> {
-  return {
-    text: await SimpleVectorStore.fromPersistDir("storage"),
-    image: await SimpleVectorStore.fromPersistDir(
-      path.join("storage", "images"),
-    ),
-  };
 }
 
 export function getEmbeddings() {

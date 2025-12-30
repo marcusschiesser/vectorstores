@@ -21,7 +21,7 @@ pnpm turbo run dev --filter="./packages/core" --concurrency=100
 pnpm test
 
 # Type checking
-pnpm type-check
+pnpm typecheck
 
 # Linting
 pnpm lint

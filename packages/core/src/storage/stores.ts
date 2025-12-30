@@ -1,3 +1,5 @@
+import { path } from "@vectorstores/env";
+import { ALL_MODALITIES } from "../schema/index.js";
 import type {
   BaseVectorStore,
   VectorStoreByType,
@@ -18,12 +20,24 @@ export async function createVectorStores(
   options: CreateVectorStoresOptions,
 ): Promise<VectorStoreByType> {
   const vectorStores: VectorStoreByType = {};
-  if (!options.persistDir) {
-    vectorStores.text = options.vectorStore ?? new SimpleVectorStore();
+
+  if (options.vectorStore) {
+    // If vectorStore is provided, use it for text modality
+    vectorStores.text = options.vectorStore;
   } else {
-    vectorStores.text =
-      options.vectorStore ??
-      (await SimpleVectorStore.fromPersistDir(options.persistDir));
+    // Create new stores for each modality
+    for (const modality of ALL_MODALITIES) {
+      if (options.persistDir) {
+        // Use persistDir as a prefix for each modality
+        const modalityPersistDir = path.join(options.persistDir, modality);
+        vectorStores[modality] =
+          await SimpleVectorStore.fromPersistDir(modalityPersistDir);
+      } else {
+        // Create new in-memory stores
+        vectorStores[modality] = new SimpleVectorStore();
+      }
+    }
   }
+
   return vectorStores;
 }

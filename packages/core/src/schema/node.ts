@@ -464,6 +464,8 @@ export interface NodeWithScore<T extends Metadata = Metadata> {
 
 export type ModalityType = "text" | "image" | "audio";
 
+export const ALL_MODALITIES: ModalityType[] = ["text", "image", "audio"];
+
 type NodesByType = {
   [P in ModalityType]?: BaseNode[];
 };

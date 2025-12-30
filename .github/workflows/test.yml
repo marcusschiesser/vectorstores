@@ -65,6 +65,6 @@ jobs:
       - name: Build
         run: pnpm run build
       - name: Run Type Check
-        run: pnpm run type-check
+        run: pnpm run typecheck
       - name: Run Circular Dependency Check
         run: pnpm run circular-check
