@@ -1,5 +1,11 @@
 # @vectorstores/examples
 
+## 0.1.4
+
+### Patch Changes
+
+- 42c7cc4: Remove embedFunc from vector store - set in VectorStoreIndex instead
+
 ## 0.1.3
 
 ### Patch Changes

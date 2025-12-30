@@ -1,5 +1,12 @@
 # @vectorstores/core
 
+## 0.1.7
+
+### Patch Changes
+
+- 42c7cc4: Add multi-modal embeddings to VectorStoreIndex
+- 42c7cc4: Remove embedFunc from vector store - set in VectorStoreIndex instead
+
 ## 0.1.6
 
 ### Patch Changes
