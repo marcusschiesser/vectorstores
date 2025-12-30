@@ -1,4 +1,4 @@
-import type { ImageType, ModalityType } from "../schema";
+import type { ImageType } from "../schema";
 
 type EmbedFunc<T> = (values: T[]) => Promise<Array<number[]>>;
 export type TextEmbedFunc = EmbedFunc<string>;
@@ -8,11 +8,9 @@ export type ImageEmbedFunc = EmbedFunc<ImageType>;
  * Map of modality to embedding function.
  */
 export type EmbeddingsByType = {
-  [K in ModalityType]?: K extends "TEXT"
-    ? TextEmbedFunc
-    : K extends "IMAGE"
-      ? ImageEmbedFunc
-      : never;
+  text?: TextEmbedFunc;
+  image?: ImageEmbedFunc;
+  audio?: never;
 };
 
 export async function batchEmbeddings<T>(

@@ -1,6 +1,6 @@
 import {
   MetadataMode,
-  ModalityType,
+  type ModalityType,
   splitNodesByType,
 } from "../schema/index.js";
 import type { BaseNode, ImageNode, ImageType } from "../schema/node";
@@ -24,7 +24,7 @@ import {
  *   transformations: [
  *     new SentenceSplitter({ chunkSize: 1024 }),
  *     embeddings({
- *       [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
+ *       text: getOpenAIEmbedding("text-embedding-3-small"),
  *     }),
  *   ],
  * });
@@ -48,7 +48,7 @@ export function calcEmbeddings(
         );
       }
 
-      if (modalityType === ModalityType.TEXT) {
+      if (modalityType === "text") {
         const texts = typeNodes.map((n) => n.getContent(MetadataMode.EMBED));
         const embeddingResults = await batchEmbeddings(
           texts,
@@ -58,7 +58,7 @@ export function calcEmbeddings(
         for (let i = 0; i < typeNodes.length; i++) {
           typeNodes[i]!.embedding = embeddingResults[i];
         }
-      } else if (modalityType === ModalityType.IMAGE) {
+      } else if (modalityType === "image") {
         const images = typeNodes.map(
           (n) => (n as ImageNode).image as ImageType,
         );

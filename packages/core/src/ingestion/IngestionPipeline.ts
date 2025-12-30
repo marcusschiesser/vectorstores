@@ -3,7 +3,7 @@ import {
   type BaseReader,
   type Document,
   type Metadata,
-  ModalityType,
+  type ModalityType,
   splitNodesByType,
   type TransformComponent,
 } from "../schema/index.js";
@@ -64,9 +64,7 @@ export class IngestionPipeline {
     Object.assign(this, init);
     this.vectorStores =
       this.vectorStores ??
-      (this.vectorStore
-        ? { [ModalityType.TEXT]: this.vectorStore }
-        : undefined);
+      (this.vectorStore ? { text: this.vectorStore } : undefined);
     if (!this.disableCache) {
       this.cache = new IngestionCache();
     }

@@ -8,7 +8,6 @@ import type {
   MessageContentImageTypeDetail,
   MessageContentTextDetail,
 } from "../src/llms/type.js";
-import { ModalityType } from "../src/schema/index.js";
 
 describe("calculateQueryEmbedding", () => {
   const mockTextEmbedding = [0.1, 0.2, 0.3];
@@ -22,8 +21,8 @@ describe("calculateQueryEmbedding", () => {
     textEmbedFunc = vi.fn().mockResolvedValue([mockTextEmbedding]);
     imageEmbedFunc = vi.fn().mockResolvedValue([mockImageEmbedding]);
     embeddings = {
-      [ModalityType.TEXT]: textEmbedFunc,
-      [ModalityType.IMAGE]: imageEmbedFunc,
+      text: textEmbedFunc,
+      image: imageEmbedFunc,
     };
   });
 
@@ -46,7 +45,7 @@ describe("calculateQueryEmbedding", () => {
         text: "What did the author do in college?",
       };
       const embeddingsWithoutText: EmbeddingsByType = {
-        [ModalityType.IMAGE]: imageEmbedFunc,
+        image: imageEmbedFunc,
       };
 
       await expect(
@@ -86,7 +85,7 @@ describe("calculateQueryEmbedding", () => {
         image_url: { url: "https://example.com/image.jpg" },
       };
       const embeddingsWithoutImage: EmbeddingsByType = {
-        [ModalityType.TEXT]: textEmbedFunc,
+        text: textEmbedFunc,
       };
 
       await expect(
@@ -152,7 +151,7 @@ describe("calculateQueryEmbedding", () => {
         image: "https://example.com/image.jpg",
       };
       const embeddingsWithoutImage: EmbeddingsByType = {
-        [ModalityType.TEXT]: textEmbedFunc,
+        text: textEmbedFunc,
       };
 
       await expect(
@@ -194,7 +193,7 @@ describe("calculateQueryEmbedding", () => {
         mimeType: "image/jpeg",
       };
       const embeddingsWithoutImage: EmbeddingsByType = {
-        [ModalityType.TEXT]: textEmbedFunc,
+        text: textEmbedFunc,
       };
 
       await expect(

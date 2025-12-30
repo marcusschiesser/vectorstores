@@ -1,4 +1,3 @@
-import { ModalityType } from "../schema/index.js";
 import type {
   BaseVectorStore,
   VectorStoreByType,
@@ -20,10 +19,9 @@ export async function createVectorStores(
 ): Promise<VectorStoreByType> {
   const vectorStores: VectorStoreByType = {};
   if (!options.persistDir) {
-    vectorStores[ModalityType.TEXT] =
-      options.vectorStore ?? new SimpleVectorStore();
+    vectorStores.text = options.vectorStore ?? new SimpleVectorStore();
   } else {
-    vectorStores[ModalityType.TEXT] =
+    vectorStores.text =
       options.vectorStore ??
       (await SimpleVectorStore.fromPersistDir(options.persistDir));
   }

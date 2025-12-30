@@ -11,7 +11,7 @@ import {
   RawImage,
 } from "@huggingface/transformers";
 import type { ImageType, VectorStoreByType } from "@vectorstores/core";
-import { ModalityType, SimpleVectorStore } from "@vectorstores/core";
+import { SimpleVectorStore } from "@vectorstores/core";
 import { path } from "@vectorstores/env";
 
 const MODEL_ID = "Xenova/clip-vit-base-patch32";
@@ -119,8 +119,8 @@ export async function getImageEmbeddings(
 
 export async function getVectorStores(): Promise<VectorStoreByType> {
   return {
-    [ModalityType.TEXT]: await SimpleVectorStore.fromPersistDir("storage"),
-    [ModalityType.IMAGE]: await SimpleVectorStore.fromPersistDir(
+    text: await SimpleVectorStore.fromPersistDir("storage"),
+    image: await SimpleVectorStore.fromPersistDir(
       path.join("storage", "images"),
     ),
   };
@@ -128,7 +128,7 @@ export async function getVectorStores(): Promise<VectorStoreByType> {
 
 export function getEmbeddings() {
   return {
-    [ModalityType.TEXT]: getTextEmbeddings,
-    [ModalityType.IMAGE]: getImageEmbeddings,
+    text: getTextEmbeddings,
+    image: getImageEmbeddings,
   };
 }

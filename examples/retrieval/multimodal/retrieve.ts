@@ -18,7 +18,7 @@ async function main() {
     embeddings: getEmbeddings(),
   });
   const retriever = index.asRetriever({
-    topK: { TEXT: 1, IMAGE: 3, AUDIO: 0 },
+    topK: { text: 1, image: 3, audio: 0 },
   });
   const results = await retriever.retrieve({
     query: "what are Vincent van Gogh's famous paintings",

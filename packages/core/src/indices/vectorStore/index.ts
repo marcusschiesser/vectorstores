@@ -18,7 +18,7 @@ import { BaseRetriever } from "../../retriever/index.js";
 import {
   type BaseNode,
   type Document,
-  ModalityType,
+  type ModalityType,
   type NodeWithScore,
 } from "../../schema/index.js";
 import { createVectorStores } from "../../storage/stores.js";
@@ -68,10 +68,10 @@ export class VectorStoreIndex extends BaseIndex {
     // Resolve embeddings: explicit embeddings > embedFunc > Settings.embedFunc
     const textEmbedFunc = options.embedFunc ?? Settings.embedFunc ?? undefined;
     const embeddings: EmbeddingsByType = options.embeddings ?? {
-      ...(textEmbedFunc ? { [ModalityType.TEXT]: textEmbedFunc } : {}),
+      ...(textEmbedFunc ? { text: textEmbedFunc } : {}),
     };
 
-    if (!embeddings[ModalityType.TEXT]) {
+    if (!embeddings.text) {
       throw new Error(
         "No text embedding function provided. Pass embedFunc, embeddings, or set Settings.embedFunc.",
       );
@@ -154,10 +154,10 @@ export class VectorStoreIndex extends BaseIndex {
     // Resolve embeddings: explicit embeddings > embedFunc > Settings.embedFunc
     const textEmbedFunc = args.embedFunc ?? Settings.embedFunc ?? undefined;
     const embeddings: EmbeddingsByType = args.embeddings ?? {
-      ...(textEmbedFunc ? { [ModalityType.TEXT]: textEmbedFunc } : {}),
+      ...(textEmbedFunc ? { text: textEmbedFunc } : {}),
     };
 
-    if (!embeddings[ModalityType.TEXT]) {
+    if (!embeddings.text) {
       throw new Error(
         "No text embedding function provided. Pass embedFunc, embeddings, or set Settings.embedFunc.",
       );
@@ -183,7 +183,7 @@ export class VectorStoreIndex extends BaseIndex {
     vectorStores: VectorStoreByType,
     embeddings: EmbeddingsByType,
   ) {
-    if (!vectorStores[ModalityType.TEXT]?.storesText) {
+    if (!vectorStores.text?.storesText) {
       throw new Error(
         "Cannot initialize from a vector store that does not store text",
       );
@@ -204,7 +204,7 @@ export class VectorStoreIndex extends BaseIndex {
   ) {
     return VectorStoreIndex.fromVectorStores(
       {
-        [ModalityType.TEXT]: vectorStore,
+        text: vectorStore,
       },
       embeddings,
     );
@@ -298,12 +298,12 @@ export class VectorIndexRetriever extends BaseRetriever {
       this.topK = options.topK;
     } else {
       this.topK = {
-        [ModalityType.TEXT]:
+        text:
           "similarityTopK" in options && options.similarityTopK
             ? options.similarityTopK
             : DEFAULT_SIMILARITY_TOP_K,
-        [ModalityType.IMAGE]: DEFAULT_SIMILARITY_TOP_K,
-        [ModalityType.AUDIO]: DEFAULT_SIMILARITY_TOP_K,
+        image: DEFAULT_SIMILARITY_TOP_K,
+        audio: DEFAULT_SIMILARITY_TOP_K,
       };
     }
     this.filters = options.filters;
@@ -315,7 +315,7 @@ export class VectorIndexRetriever extends BaseRetriever {
    * @deprecated, pass similarityTopK or topK in constructor instead or directly modify topK
    */
   set similarityTopK(similarityTopK: number) {
-    this.topK[ModalityType.TEXT] = similarityTopK;
+    this.topK.text = similarityTopK;
   }
 
   async _retrieve(params: QueryBundle): Promise<NodeWithScore[]> {

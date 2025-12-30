@@ -4,7 +4,6 @@ import type {
   MessageContentImageTypeDetail,
   MessageContentTextDetail,
 } from "../llms/type.js";
-import { ModalityType } from "../schema/index.js";
 import type { EmbeddingsByType } from "./base.js";
 
 /**
@@ -22,7 +21,7 @@ import type { EmbeddingsByType } from "./base.js";
  * };
  *
  * const embeddings = {
- *   [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
+ *   text: getOpenAIEmbedding("text-embedding-3-small"),
  * };
  *
  * const queryEmbedding = await calculateQueryEmbedding(textItem, embeddings);
@@ -35,7 +34,7 @@ export async function calculateQueryEmbedding(
   // Handle text queries - always use TEXT embedFunc (required for CLIP multimodal search)
   if (item.type === "text" && "text" in item) {
     const textItem = item as MessageContentTextDetail;
-    const textEmbedFunc = embeddings[ModalityType.TEXT];
+    const textEmbedFunc = embeddings.text;
     if (!textEmbedFunc) {
       throw new Error(
         "No TEXT embedding function provided. Pass embeddings option to VectorStoreIndex.",
@@ -47,7 +46,7 @@ export async function calculateQueryEmbedding(
 
   // Handle image_url queries
   if (item.type === "image_url" && "image_url" in item) {
-    const imageEmbedFunc = embeddings[ModalityType.IMAGE];
+    const imageEmbedFunc = embeddings.image;
     if (!imageEmbedFunc) {
       throw new Error(
         "No IMAGE embedding function provided. Pass embeddings option to VectorStoreIndex.",
@@ -60,7 +59,7 @@ export async function calculateQueryEmbedding(
   // Handle image_type queries
   if (item.type === "image_type" && "image" in item) {
     const imageTypeItem = item as MessageContentImageTypeDetail;
-    const imageEmbedFunc = embeddings[ModalityType.IMAGE];
+    const imageEmbedFunc = embeddings.image;
     if (!imageEmbedFunc) {
       throw new Error(
         "No IMAGE embedding function provided. Pass embeddings option to VectorStoreIndex.",
@@ -73,7 +72,7 @@ export async function calculateQueryEmbedding(
   // Handle image (base64 encoded) queries
   if (item.type === "image" && "data" in item) {
     const imageDataItem = item as MessageContentImageDataDetail;
-    const imageEmbedFunc = embeddings[ModalityType.IMAGE];
+    const imageEmbedFunc = embeddings.image;
     if (!imageEmbedFunc) {
       throw new Error(
         "No IMAGE embedding function provided. Pass embeddings option to VectorStoreIndex.",

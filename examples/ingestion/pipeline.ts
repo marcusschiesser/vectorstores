@@ -1,7 +1,6 @@
 import {
   Document,
   IngestionPipeline,
-  ModalityType,
   SentenceSplitter,
   VectorStoreIndex,
   calcEmbeddings,
@@ -22,7 +21,7 @@ async function main() {
   );
   const essay = await fs.readFile(filePath, "utf-8");
   const embeddings = {
-    [ModalityType.TEXT]: getOpenAIEmbedding("text-embedding-3-small"),
+    text: getOpenAIEmbedding("text-embedding-3-small"),
   };
 
   // Create Document object with essay
