@@ -16,7 +16,6 @@ import {
   parseNumberValue,
   type MetadataFilter,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -129,22 +128,20 @@ export class WeaviateVectorStore extends BaseVectorStore {
   private embeddingKey: string;
   private metadataKey: string;
 
-  constructor(
-    init?: VectorStoreBaseParams & {
-      weaviateClient?: WeaviateClient;
-      cloudOptions?: {
-        clusterURL?: string;
-        apiKey?: string;
-      };
-      indexName?: string;
-      idKey?: string;
-      contentKey?: string;
-      metadataKey?: string;
-      embeddingKey?: string;
-      sanitizeMetadata?: boolean;
-    },
-  ) {
-    super(init);
+  constructor(init?: {
+    weaviateClient?: WeaviateClient;
+    cloudOptions?: {
+      clusterURL?: string;
+      apiKey?: string;
+    };
+    indexName?: string;
+    idKey?: string;
+    contentKey?: string;
+    metadataKey?: string;
+    embeddingKey?: string;
+    sanitizeMetadata?: boolean;
+  }) {
+    super();
 
     if (init?.weaviateClient) {
       // Use the provided client

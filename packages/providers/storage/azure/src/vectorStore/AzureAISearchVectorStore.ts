@@ -34,7 +34,6 @@ import {
   type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -306,8 +305,8 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
   ) => T;
   #hiddenFiledKeys: string[] | undefined;
 
-  constructor(options: AzureAISearchOptions<T> & VectorStoreBaseParams) {
-    super(options);
+  constructor(options: AzureAISearchOptions<T>) {
+    super();
 
     // set default values
     options.vectorAlgorithmType ||=

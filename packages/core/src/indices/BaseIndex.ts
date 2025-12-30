@@ -1,3 +1,4 @@
+import type { EmbeddingsByType } from "../embeddings/index.js";
 import { Settings } from "../global/settings.js";
 import { runTransformations } from "../ingestion/IngestionPipeline.js";
 import { SentenceSplitter } from "../node-parser/index.js";
@@ -7,6 +8,7 @@ import type { VectorStoreByType } from "../vector-store/index.js";
 
 export interface BaseIndexInit {
   vectorStores: VectorStoreByType;
+  embeddings: EmbeddingsByType;
 }
 
 /**
@@ -15,9 +17,11 @@ export interface BaseIndexInit {
  */
 export abstract class BaseIndex {
   vectorStores: VectorStoreByType;
+  embeddings: EmbeddingsByType;
 
   constructor(init: BaseIndexInit) {
     this.vectorStores = init.vectorStores;
+    this.embeddings = init.embeddings;
   }
 
   /**

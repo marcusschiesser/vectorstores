@@ -1,5 +1,5 @@
 import type { NodeWithScore, TextNode } from "@vectorstores/core";
-import { MetadataMode } from "@vectorstores/core";
+import { ImageNode, MetadataMode } from "@vectorstores/core";
 
 export interface FormatOptions {
   /** Max width for the text content column (default: 80) */
@@ -41,14 +41,25 @@ export function formatRetrieverResponse(
   }
 
   const rows = results.map((result, index) => {
-    const node = result.node as TextNode;
-    const text = node.text ?? node.getContent?.(MetadataMode.NONE) ?? "";
+    const node = result.node;
+    const isImageNode = node instanceof ImageNode;
 
     const row: Record<string, string | number> = {
       "#": index + 1,
+      Type: isImageNode ? "Image" : "Text",
       Score: formatScore(result.score),
-      Text: truncate(text, maxTextWidth),
     };
+
+    if (isImageNode) {
+      const imageNode = node as ImageNode;
+      const imageUrl = imageNode.getUrl().toString();
+      row["Content"] = imageUrl;
+    } else {
+      const textNode = node as TextNode;
+      const text =
+        textNode.text ?? textNode.getContent?.(MetadataMode.NONE) ?? "";
+      row["Content"] = truncate(text, maxTextWidth);
+    }
 
     if (showId) {
       row["ID"] = truncate(node.id_, 20);

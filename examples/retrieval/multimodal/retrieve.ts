@@ -1,41 +1,21 @@
-import {
-  ImageNode,
-  Settings,
-  TextNode,
-  VectorStoreIndex,
-} from "@vectorstores/core";
-import { getVectorStores } from "./storage";
-
-// Update chunk size and overlap
-Settings.chunkSize = 512;
-Settings.chunkOverlap = 20;
+import { VectorStoreIndex } from "@vectorstores/core";
+import { formatRetrieverResponse } from "../../shared/utils/format-response";
+import { getEmbeddings } from "./embeddings";
 
 async function main() {
   // retrieve documents using the index
-  const vectorStores = await getVectorStores();
   const index = await VectorStoreIndex.init({
-    nodes: [],
-    vectorStores,
+    persistDir: "storage",
+    embeddings: getEmbeddings(),
   });
   const retriever = index.asRetriever({
-    topK: { TEXT: 1, IMAGE: 3, AUDIO: 0 },
+    topK: { text: 1, image: 2 },
   });
-  const results = await retriever.retrieve({
-    query: "what are Vincent van Gogh's famous paintings",
-  });
-  for (const result of results) {
-    const node = result.node;
-    if (!node) {
-      continue;
-    }
-    if (node instanceof ImageNode) {
-      console.log(`Image: ${node.getUrl()}`);
-    } else if (node instanceof TextNode) {
-      console.log("Text:", (node as TextNode).text.substring(0, 128));
-    }
-    console.log(`ID: ${node.id_}`);
-    console.log(`Similarity: ${result.score}\n`);
-  }
+  const results = await retriever.retrieve(
+    "what are Vincent van Gogh's famous paintings",
+  );
+
+  console.log(formatRetrieverResponse(results));
 }
 
 main().catch(console.error);

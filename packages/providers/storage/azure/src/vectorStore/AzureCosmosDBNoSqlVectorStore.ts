@@ -21,7 +21,6 @@ import { getEnv } from "@vectorstores/env";
 
 import {
   BaseVectorStore,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -172,8 +171,8 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
     return this.cosmosClient;
   }
 
-  constructor(dbConfig: AzureCosmosDBNoSQLConfig & VectorStoreBaseParams) {
-    super(dbConfig);
+  constructor(dbConfig: AzureCosmosDBNoSQLConfig) {
+    super();
     if (!dbConfig.client) {
       throw new Error(
         "CosmosClient is required for AzureCosmosDBNoSQLVectorStore initialization",
@@ -231,8 +230,7 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
    * @returns Instance of AzureCosmosDBNoSqlVectorStore
    */
   static fromConnectionString(
-    config: { connectionString?: string } & AzureCosmosDBNoSQLConfig &
-      VectorStoreBaseParams = {},
+    config: { connectionString?: string } & AzureCosmosDBNoSQLConfig = {},
   ): AzureCosmosDBNoSqlVectorStore {
     const cosmosConnectionString =
       config.connectionString ||
@@ -255,8 +253,7 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
    * @returns Instance of AzureCosmosDBNoSqlVectorStore
    */
   static fromAccountAndKey(
-    config: { endpoint?: string; key?: string } & AzureCosmosDBNoSQLConfig &
-      VectorStoreBaseParams = {},
+    config: { endpoint?: string; key?: string } & AzureCosmosDBNoSQLConfig = {},
   ): AzureCosmosDBNoSqlVectorStore {
     const cosmosEndpoint =
       config.endpoint || (getEnv("AZURE_COSMOSDB_NOSQL_ENDPOINT") as string);
@@ -286,8 +283,7 @@ export class AzureCosmosDBNoSqlVectorStore extends BaseVectorStore {
     config: {
       endpoint?: string;
       credential?: TokenCredential;
-    } & AzureCosmosDBNoSQLConfig &
-      VectorStoreBaseParams = {},
+    } & AzureCosmosDBNoSQLConfig = {},
   ): AzureCosmosDBNoSqlVectorStore {
     const cosmosEndpoint =
       config.endpoint ||

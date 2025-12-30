@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "type-check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "start": "echo 'To get started, run `npx tsx <path to example>`'",
     "use-npm": "node ../scripts/use-npm-deps.mjs ./package.json",
     "use-workspace": "node ../scripts/use-workspace-deps.mjs ./package.json"
