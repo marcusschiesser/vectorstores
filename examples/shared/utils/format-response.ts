@@ -53,7 +53,7 @@ export function formatRetrieverResponse(
     if (isImageNode) {
       const imageNode = node as ImageNode;
       const imageUrl = imageNode.getUrl().toString();
-      row["Content"] = truncate(imageUrl, maxTextWidth);
+      row["Content"] = imageUrl;
     } else {
       const textNode = node as TextNode;
       const text =

@@ -1,4 +1,4 @@
-import { createSHA256, path, randomUUID } from "@vectorstores/env";
+import { createSHA256, randomUUID } from "@vectorstores/env";
 import { chunkSizeCheck } from "./utils/chunk-size-check";
 
 export enum NodeRelationship {
@@ -385,8 +385,10 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
         !(image instanceof Blob) &&
         !(image instanceof URL))
     ) {
-      const absPath = path.resolve(this.id_);
-      image = new URL(`file://${absPath}`);
+      const reconstructedUrl = this.resolveImageUrl();
+      if (reconstructedUrl) {
+        image = reconstructedUrl;
+      }
     }
 
     this.image = image;
@@ -396,10 +398,22 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
     return ObjectType.IMAGE;
   }
 
+  private resolveImageUrl(): URL | null {
+    const filePath = this.metadata["file_path"] as string | undefined;
+    if (filePath) {
+      return new URL(`file://${filePath}`);
+    }
+    return null;
+  }
+
   getUrl(): URL {
-    // id_ stores the relative path, convert it to the URL of the file
-    const absPath = path.resolve(this.id_);
-    return new URL(`file://${absPath}`);
+    const url = this.resolveImageUrl();
+    if (url) {
+      return url;
+    }
+    throw new Error(
+      `Cannot determine image file path. Node metadata.file_path is not set.`,
+    );
   }
 
   // Calculates the image part of the hash
