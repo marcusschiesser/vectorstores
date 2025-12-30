@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { Document, formatLLM, VectorStoreIndex } from "@vectorstores/core";
+import { formatLLM, VectorStoreIndex } from "@vectorstores/core";
 import { embedMany, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 
@@ -47,14 +47,10 @@ async function main() {
               ),
           }),
           execute: async ({ memory }) => {
-            // Create a document from the memory text
-            const document = new Document({
-              text: memory,
-              metadata: { timestamp: new Date().toISOString() },
+            // Add the memory to the vector store with timestamp metadata
+            await index.insertText(memory, {
+              timestamp: new Date().toISOString(),
             });
-
-            // Add the memory to the vector store
-            await index.insertNodes([document]);
 
             return `Memory stored: ${memory}`;
           },

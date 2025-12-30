@@ -259,6 +259,30 @@ export class VectorStoreIndex extends BaseIndex {
     );
   }
 
+  /**
+   * Convenience method to insert text directly into the index.
+   * Creates a Document from the text and inserts it into the vector store.
+   * @param text - The text to insert (string or array of strings)
+   * @param metadata - Optional metadata to attach to the document(s)
+   * @param options - Optional insert options
+   * @returns Promise that resolves when the text is inserted
+   */
+  async insertText(
+    text: string | string[],
+    metadata?: Metadata,
+    options?: {
+      logProgress?: boolean | undefined;
+      progressCallback?:
+        | ((progress: number, total: number) => void)
+        | undefined;
+      docStoreStrategy?: DocStoreStrategy;
+    },
+  ): Promise<void> {
+    const texts = Array.isArray(text) ? text : [text];
+    const documents = texts.map((t) => new Document({ text: t, metadata }));
+    await this.insertNodes(documents, options);
+  }
+
   async deleteRefDoc(refDocId: string): Promise<void> {
     for (const vectorStore of Object.values(this.vectorStores)) {
       await this.deleteRefDocFromStore(vectorStore, refDocId);
