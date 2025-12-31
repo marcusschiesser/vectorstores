@@ -16,8 +16,9 @@ import { SentenceSplitter } from "../../node-parser/index.js";
 import type { QueryBundle } from "../../retriever/index.js";
 import { BaseRetriever } from "../../retriever/index.js";
 import {
+  Document,
   type BaseNode,
-  type Document,
+  type Metadata,
   type ModalityType,
   type NodeWithScore,
 } from "../../schema/index.js";
@@ -39,7 +40,6 @@ export type VectorIndexOptions = {
   vectorStores?: VectorStoreByType | undefined;
   persistDir?: string | undefined;
   logProgress?: boolean | undefined;
-  progressCallback?: ((progress: number, total: number) => void) | undefined;
   /** Text embedding function. Falls back to Settings.embedFunc if not provided. */
   embedFunc?: TextEmbedFunc | undefined;
   /** Map of modality to embedding function. Overrides embedFunc for specified modalities. */
@@ -84,29 +84,9 @@ export class VectorStoreIndex extends BaseIndex {
 
     if (options.nodes) {
       // If nodes are passed in, then we need to update the index
-      await index.buildIndexFromNodes(options.nodes, {
-        logProgress: options.logProgress,
-        progressCallback: options.progressCallback,
-      });
+      await index.insertNodes(options.nodes);
     }
     return index;
-  }
-
-  /**
-   * Get embeddings for nodes and place them into the index.
-   * @param nodes
-   * @returns
-   */
-  async buildIndexFromNodes(
-    nodes: BaseNode[],
-    options?: {
-      logProgress?: boolean | undefined;
-      progressCallback?:
-        | ((progress: number, total: number) => void)
-        | undefined;
-    },
-  ) {
-    await this.insertNodes(nodes, options);
   }
 
   /**
@@ -171,8 +151,6 @@ export class VectorStoreIndex extends BaseIndex {
 
     // Insert nodes with embeddings and deduplication
     await index.insertNodes(nodes, {
-      logProgress: args.logProgress,
-      progressCallback: args.progressCallback,
       docStoreStrategy,
     });
 
@@ -219,10 +197,6 @@ export class VectorStoreIndex extends BaseIndex {
   async insertNodes(
     nodes: BaseNode[],
     options?: {
-      logProgress?: boolean | undefined;
-      progressCallback?:
-        | ((progress: number, total: number) => void)
-        | undefined;
       docStoreStrategy?: DocStoreStrategy;
     },
   ): Promise<void> {
@@ -249,12 +223,8 @@ export class VectorStoreIndex extends BaseIndex {
    */
   async insertText(
     text: string | string[],
-    metadata?: Metadata,
+    metadata?: Metadata | undefined,
     options?: {
-      logProgress?: boolean | undefined;
-      progressCallback?:
-        | ((progress: number, total: number) => void)
-        | undefined;
       docStoreStrategy?: DocStoreStrategy;
     },
   ): Promise<void> {

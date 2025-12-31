@@ -1,19 +1,13 @@
 import { openai } from "@ai-sdk/openai";
 import { formatLLM, VectorStoreIndex } from "@vectorstores/core";
-import { embedMany, stepCountIs, streamText, tool } from "ai";
+import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
+import { embeddings } from "./embeddings";
 
 async function main() {
   // Create an empty vector store index for storing memories
   const index = await VectorStoreIndex.init({
-    nodes: [],
-    embedFunc: async (input: string[]): Promise<number[][]> => {
-      const { embeddings } = await embedMany({
-        model: openai.embedding("text-embedding-3-small"),
-        values: input,
-      });
-      return embeddings;
-    },
+    embeddings,
   });
   console.log("Successfully created memory index");
 
@@ -24,16 +18,17 @@ async function main() {
     "My name is Alice and I love hiking in the mountains.",
     "What's my name and what do I love?",
     "I also enjoy photography, especially landscape photography.",
-    "What are my hobbies?",
+    "What is my name and what are my hobbies?",
   ];
 
   for (const userMessage of conversations) {
     console.log(`\n${"=".repeat(80)}`);
     console.log(`User: ${userMessage}`);
-    console.log(`${"=".repeat(80)}\n`);
+    console.log(`${"=".repeat(80)}`);
 
     const result = streamText({
-      model: openai("gpt-4o"),
+      model: openai("gpt-5-mini"),
+      system: `You are a helpful assistant that can store and retrieve memories about the user. Don't make any new suggestions.`,
       prompt: userMessage,
       tools: {
         addMemory: tool({
@@ -59,9 +54,7 @@ async function main() {
           description:
             "Retrieve relevant memories from long-term storage based on a query. Use this to recall information about the user.",
           inputSchema: z.object({
-            query: z
-              .string()
-              .describe("The query to search for relevant memories."),
+            query: z.string(),
           }),
           execute: async ({ query }) => {
             const results = await retriever.retrieve({ query });
@@ -71,7 +64,7 @@ async function main() {
           },
         }),
       },
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(5),
     });
 
     for await (const textPart of result.textStream) {
