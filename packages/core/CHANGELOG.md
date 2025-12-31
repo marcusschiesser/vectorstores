@@ -1,5 +1,11 @@
 # @vectorstores/core
 
+## 0.1.8
+
+### Patch Changes
+
+- f428b0d: Add insertText to VectorStoreIndex to quickly add text to the store
+
 ## 0.1.7
 
 ### Patch Changes
