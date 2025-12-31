@@ -122,11 +122,6 @@ export async function addNodesToVectorStores(
   nodes: BaseNode<Metadata>[],
   vectorStores: VectorStoreByType,
   docStoreStrategy: DocStoreStrategy = DocStoreStrategy.NONE,
-  nodesAdded?: (
-    newIds: string[],
-    nodes: BaseNode<Metadata>[],
-    vectorStore: BaseVectorStore,
-  ) => Promise<void>,
 ) {
   const nodeMap = splitNodesByType(nodes);
 
@@ -148,10 +143,7 @@ export async function addNodesToVectorStores(
     }
 
     if (typeNodes.length > 0) {
-      const newIds = await vectorStore.add(typeNodes);
-      if (nodesAdded) {
-        await nodesAdded(newIds, typeNodes, vectorStore);
-      }
+      await vectorStore.add(typeNodes);
     }
   }
 }
