@@ -1,9 +1,7 @@
 import { consoleLogger, fs, type Logger, path } from "@vectorstores/env";
 import {
-  type BaseEmbedding,
   getTopKEmbeddings,
   getTopKMMREmbeddings,
-  type TextEmbedFunc,
 } from "../embeddings/index.js";
 import { DEFAULT_PERSIST_DIR } from "../global/constants.js";
 import { type BaseNode, jsonToNode } from "../schema/index.js";
@@ -19,7 +17,6 @@ import {
   nodeToMetadata,
   parseArrayValue,
   parsePrimitiveValue,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryMode,
   type VectorStoreQueryResult,
@@ -132,24 +129,17 @@ export class SimpleVectorStore extends BaseVectorStore {
   private data: SimpleVectorStoreData;
   private persistPath: string | undefined;
 
-  constructor(
-    init?: {
-      data?: SimpleVectorStoreData | undefined;
-    } & VectorStoreBaseParams,
-  ) {
-    super(init);
+  constructor(init?: { data?: SimpleVectorStoreData | undefined }) {
+    super();
     this.data = init?.data || new SimpleVectorStoreData();
   }
 
   static async fromPersistDir(
     persistDir: string = DEFAULT_PERSIST_DIR,
-    embedModel?: BaseEmbedding,
-    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
+    options?: { logger?: Logger },
   ): Promise<SimpleVectorStore> {
     const persistPath = path.join(persistDir, "vector_store.json");
-    return await SimpleVectorStore.fromPersistPath(persistPath, embedModel, {
-      ...options,
-    });
+    return await SimpleVectorStore.fromPersistPath(persistPath, options);
   }
 
   client() {
@@ -340,8 +330,7 @@ export class SimpleVectorStore extends BaseVectorStore {
 
   static async fromPersistPath(
     persistPath: string,
-    embedModel?: BaseEmbedding,
-    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
+    options?: { logger?: Logger },
   ): Promise<SimpleVectorStore> {
     const logger = options?.logger ?? consoleLogger;
     const dirPath = path.dirname(persistPath);
@@ -376,25 +365,18 @@ export class SimpleVectorStore extends BaseVectorStore {
     for (const [id, nodeJson] of Object.entries(nodesDictJson)) {
       data.nodesDict[id] = jsonToNode(nodeJson);
     }
-    const store = new SimpleVectorStore({
-      data,
-      embedModel,
-      embedFunc: options?.embedFunc,
-    });
+    const store = new SimpleVectorStore({ data });
     store.persistPath = persistPath;
     return store;
   }
 
-  static fromDict(
-    saveDict: SimpleVectorStoreData,
-    embedModel?: BaseEmbedding,
-  ): SimpleVectorStore {
+  static fromDict(saveDict: SimpleVectorStoreData): SimpleVectorStore {
     const data = new SimpleVectorStoreData();
     data.embeddingDict = saveDict.embeddingDict;
     data.textIdToRefDocId = saveDict.textIdToRefDocId;
     data.metadataDict = saveDict.metadataDict;
     data.nodesDict = saveDict.nodesDict ?? {};
-    return new SimpleVectorStore({ data, embedModel });
+    return new SimpleVectorStore({ data });
   }
 
   toDict(): SimpleVectorStoreData {

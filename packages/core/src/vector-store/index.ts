@@ -1,4 +1,3 @@
-import { BaseEmbedding, type TextEmbedFunc } from "../embeddings";
 import type { BaseNode, ModalityType } from "../schema";
 
 /**
@@ -88,12 +87,12 @@ export interface VectorStoreInfo {
 }
 
 export interface VectorStoreQuery<T = unknown> {
-  queryEmbedding?: number[];
+  queryEmbedding?: number[] | undefined;
   similarityTopK: number;
   docIds?: string[];
-  queryStr?: string;
+  queryStr?: string | undefined;
   mode: VectorStoreQueryMode;
-  alpha?: number;
+  alpha?: number | undefined;
   filters?: MetadataFilters | undefined;
   mmrThreshold?: number;
   customParams?: T | undefined;
@@ -116,16 +115,7 @@ export type VectorStoreByType = {
   [P in ModalityType]?: BaseVectorStore;
 };
 
-export type VectorStoreBaseParams = {
-  // @deprecated: use embedFunc instead
-  embeddingModel?: BaseEmbedding | undefined;
-  // @deprecated: use embedFunc instead
-  embedModel?: BaseEmbedding | undefined;
-  embedFunc?: TextEmbedFunc | undefined;
-};
-
 export abstract class BaseVectorStore<Client = unknown, T = unknown> {
-  embedModel: BaseEmbedding;
   abstract storesText: boolean;
   isEmbeddingQuery?: boolean;
   abstract client(): Client;
@@ -143,15 +133,6 @@ export abstract class BaseVectorStore<Client = unknown, T = unknown> {
    * @returns true if any nodes with this ref_doc_id exist
    */
   abstract exists(refDocId: string): Promise<boolean>;
-
-  protected constructor(params?: VectorStoreBaseParams) {
-    if (params?.embedFunc) {
-      this.embedModel = new BaseEmbedding({ embedFunc: params.embedFunc });
-    } else {
-      this.embedModel =
-        params?.embedModel ?? params?.embeddingModel ?? new BaseEmbedding();
-    }
-  }
 }
 
 export const parsePrimitiveValue = (

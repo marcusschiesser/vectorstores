@@ -7,12 +7,10 @@ import {
   FilterCondition,
   FilterOperator,
   MetadataMode,
-  type BaseEmbedding,
   type BaseNode,
   type IsomorphicDB,
   type Metadata,
   type MetadataFilter,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -116,12 +114,10 @@ type PGVectorStoreBaseConfig = {
   schemaName?: string | undefined;
   tableName?: string | undefined;
   dimensions?: number | undefined;
-  embedModel?: BaseEmbedding | undefined;
   performSetup?: boolean | undefined;
 };
 
-export type PGVectorStoreConfig = VectorStoreBaseParams &
-  PGVectorStoreBaseConfig &
+export type PGVectorStoreConfig = PGVectorStoreBaseConfig &
   (
     | {
         /**
@@ -166,7 +162,7 @@ export class PGVectorStore extends BaseVectorStore {
   private readonly performSetup: boolean = true;
 
   constructor(config: PGVectorStoreConfig) {
-    super(config);
+    super();
     this.schemaName = config?.schemaName ?? PGVECTOR_SCHEMA;
     this.tableName = config?.tableName ?? PGVECTOR_TABLE;
     this.dimensions = config?.dimensions ?? DEFAULT_DIMENSIONS;

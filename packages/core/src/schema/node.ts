@@ -1,4 +1,4 @@
-import { createSHA256, path, randomUUID } from "@vectorstores/env";
+import { createSHA256, randomUUID } from "@vectorstores/env";
 import { chunkSizeCheck } from "./utils/chunk-size-check";
 
 export enum NodeRelationship {
@@ -375,7 +375,22 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
 
   constructor(init: ImageNodeParams<T>) {
     super(init);
-    const { image } = init;
+    let { image } = init;
+
+    // Reconstruct image URL from file path if image was lost during serialization
+    // (Blobs serialize to {} in JSON)
+    if (
+      !image ||
+      (typeof image === "object" &&
+        !(image instanceof Blob) &&
+        !(image instanceof URL))
+    ) {
+      const reconstructedUrl = this.resolveImageUrl();
+      if (reconstructedUrl) {
+        image = reconstructedUrl;
+      }
+    }
+
     this.image = image;
   }
 
@@ -383,10 +398,22 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
     return ObjectType.IMAGE;
   }
 
+  private resolveImageUrl(): URL | null {
+    const filePath = this.metadata["file_path"] as string | undefined;
+    if (filePath) {
+      return new URL(`file://${filePath}`);
+    }
+    return null;
+  }
+
   getUrl(): URL {
-    // id_ stores the relative path, convert it to the URL of the file
-    const absPath = path.resolve(this.id_);
-    return new URL(`file://${absPath}`);
+    const url = this.resolveImageUrl();
+    if (url) {
+      return url;
+    }
+    throw new Error(
+      `Cannot determine image file path. Node metadata.file_path is not set.`,
+    );
   }
 
   // Calculates the image part of the hash
@@ -403,9 +430,9 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
     } else if (typeof this.image === "string") {
       hashFunction.update(this.image);
     } else {
-      throw new Error(
-        `Unknown image type: ${typeof this.image}. Can't calculate hash`,
-      );
+      // Handle case where Blob was serialized to {} during JSON persistence
+      // Fall back to using the node ID for hash (same as Blob case)
+      hashFunction.update(this.id_);
     }
 
     return hashFunction.digest();
@@ -422,10 +449,6 @@ export class ImageNode<T extends Metadata = Metadata> extends TextNode<T> {
 }
 
 export class ImageDocument<T extends Metadata = Metadata> extends ImageNode<T> {
-  constructor(init: ImageNodeParams<T>) {
-    super(init);
-  }
-
   get type() {
     return ObjectType.IMAGE_DOCUMENT;
   }
@@ -439,11 +462,9 @@ export interface NodeWithScore<T extends Metadata = Metadata> {
   score?: number | undefined;
 }
 
-export enum ModalityType {
-  TEXT = "TEXT",
-  IMAGE = "IMAGE",
-  AUDIO = "AUDIO",
-}
+export type ModalityType = "text" | "image" | "audio";
+
+export const ALL_MODALITIES: ModalityType[] = ["text", "image", "audio"];
 
 type NodesByType = {
   [P in ModalityType]?: BaseNode[];
@@ -458,13 +479,13 @@ export function splitNodesByType(nodes: BaseNode[]): NodesByType {
       node.type === ObjectType.IMAGE ||
       node.type === ObjectType.IMAGE_DOCUMENT
     ) {
-      type = ModalityType.IMAGE;
+      type = "image";
     } else if (
       node.type === ObjectType.TEXT ||
       node.type === ObjectType.DOCUMENT ||
       node.type === ObjectType.INDEX
     ) {
-      type = ModalityType.TEXT;
+      type = "text";
     } else {
       throw new Error(`Unknown node type: ${node.type}`);
     }

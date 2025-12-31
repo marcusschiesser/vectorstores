@@ -1,5 +1,13 @@
 # @vectorstores/notion
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [42c7cc4]
+- Updated dependencies [42c7cc4]
+  - @vectorstores/core@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes

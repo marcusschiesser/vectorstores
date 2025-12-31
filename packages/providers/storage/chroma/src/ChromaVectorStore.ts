@@ -7,7 +7,6 @@ import {
   type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -53,14 +52,12 @@ export class ChromaVectorStore extends BaseVectorStore {
   private collection: Collection | null = null;
   private collectionName: string;
 
-  constructor(
-    init: {
-      collectionName: string;
-      textKey?: string;
-      chromaClientParams?: ChromaClientParams;
-    } & VectorStoreBaseParams,
-  ) {
-    super(init);
+  constructor(init: {
+    collectionName: string;
+    textKey?: string;
+    chromaClientParams?: ChromaClientParams;
+  }) {
+    super();
     this.collectionName = init.collectionName;
     this.chromaClient = new ChromaClient(init.chromaClientParams);
     this.textKey = init.textKey ?? DEFAULT_TEXT_KEY;

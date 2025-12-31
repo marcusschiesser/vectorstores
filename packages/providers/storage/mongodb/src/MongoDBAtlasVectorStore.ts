@@ -1,5 +1,4 @@
 import {
-  type BaseEmbedding,
   type BaseNode,
   BaseVectorStore,
   combineResults,
@@ -11,7 +10,6 @@ import {
   type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -144,13 +142,12 @@ export class MongoDBAtlasVectorSearch extends BaseVectorStore {
     init: Partial<MongoDBAtlasVectorSearch> & {
       dbName: string;
       collectionName: string;
-      embedModel?: BaseEmbedding;
       autoCreateIndex?: boolean;
       indexedMetadataFields?: string[];
       embeddingDefinition?: Record<string, unknown>;
-    } & VectorStoreBaseParams,
+    },
   ) {
-    super(init);
+    super();
     if (init.mongodbClient) {
       this.mongodbClient = init.mongodbClient;
     } else {

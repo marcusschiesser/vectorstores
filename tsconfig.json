@@ -92,6 +92,9 @@
     },
     {
       "path": "./packages/providers/storage/firestore/tsconfig.json"
+    },
+    {
+      "path": "./examples/tsconfig.json"
     }
   ]
 }

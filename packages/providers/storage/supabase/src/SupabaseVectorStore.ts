@@ -8,13 +8,12 @@ import {
   type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
 
-export interface SupabaseVectorStoreInit extends VectorStoreBaseParams {
+export interface SupabaseVectorStoreInit {
   client?: SupabaseClient;
   supabaseUrl?: string;
   supabaseKey?: string;
@@ -44,7 +43,7 @@ export class SupabaseVectorStore extends BaseVectorStore {
    * @throws Error if neither client nor valid URL/key pair is provided
    */
   constructor(init: SupabaseVectorStoreInit) {
-    super(init);
+    super();
     this.table = init.table;
     if (init.client) {
       this.supabaseClient = init.client;

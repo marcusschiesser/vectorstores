@@ -9,7 +9,6 @@ import {
   parsePrimitiveValue,
   type Metadata,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -86,23 +85,22 @@ export class MilvusVectorStore extends BaseVectorStore {
   private embeddingKey: string;
 
   constructor(
-    init?: Partial<{ milvusClient: MilvusClient }> &
-      VectorStoreBaseParams & {
-        params?: {
-          configOrAddress: ClientConfig | string;
-          ssl?: boolean;
-          username?: string;
-          password?: string;
-          channelOptions?: ChannelOptions;
-        };
-        collection?: string;
-        idKey?: string;
-        contentKey?: string;
-        metadataKey?: string;
-        embeddingKey?: string;
-      },
+    init?: Partial<{ milvusClient: MilvusClient }> & {
+      params?: {
+        configOrAddress: ClientConfig | string;
+        ssl?: boolean;
+        username?: string;
+        password?: string;
+        channelOptions?: ChannelOptions;
+      };
+      collection?: string;
+      idKey?: string;
+      contentKey?: string;
+      metadataKey?: string;
+      embeddingKey?: string;
+    },
   ) {
-    super(init);
+    super();
     if (init?.milvusClient) {
       this.milvusClient = init.milvusClient;
     } else {

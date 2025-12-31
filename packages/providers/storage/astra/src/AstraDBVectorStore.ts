@@ -17,7 +17,6 @@ import {
   MetadataMode,
   nodeToMetadata,
   parseArrayValue,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -41,9 +40,9 @@ export class AstraDBVectorStore extends BaseVectorStore {
         endpoint: string;
         namespace?: string;
       };
-    } & VectorStoreBaseParams,
+    },
   ) {
-    super(init);
+    super();
     const token = init?.params?.token ?? getEnv("ASTRA_DB_APPLICATION_TOKEN");
     const endpoint = init?.params?.endpoint ?? getEnv("ASTRA_DB_API_ENDPOINT");
 

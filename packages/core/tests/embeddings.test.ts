@@ -1,11 +1,5 @@
-import { BaseEmbedding, similarity, SimilarityType } from "@vectorstores/core";
+import { similarity, SimilarityType } from "@vectorstores/core";
 import { describe, expect, test } from "vitest";
-
-describe("BaseEmbedding", () => {
-  test("should be defined", () => {
-    expect(BaseEmbedding).toBeDefined();
-  });
-});
 
 describe("similarity", () => {
   test("throws error on mismatched lengths", () => {

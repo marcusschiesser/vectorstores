@@ -24,7 +24,7 @@ const embedFunc: TextEmbedFunc = async (texts) => {
 };
 
 async function createIndex() {
-  const vectorStore = new SimpleVectorStore({ embedFunc });
+  const vectorStore = new SimpleVectorStore();
   const index = await VectorStoreIndex.init({
     vectorStore,
     embedFunc,
@@ -50,7 +50,7 @@ async function createIndex() {
  * With 10 documents, we can test that prefetch fetches more than topK.
  */
 async function createLargeIndex() {
-  const vectorStore = new SimpleVectorStore({ embedFunc });
+  const vectorStore = new SimpleVectorStore();
   const index = await VectorStoreIndex.init({
     vectorStore,
     embedFunc,

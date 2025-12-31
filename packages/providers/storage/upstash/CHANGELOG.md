@@ -1,5 +1,14 @@
 # @vectorstores/upstash
 
+## 0.1.7
+
+### Patch Changes
+
+- 42c7cc4: Remove embedFunc from vector store - set in VectorStoreIndex instead
+- Updated dependencies [42c7cc4]
+- Updated dependencies [42c7cc4]
+  - @vectorstores/core@0.1.7
+
 ## 0.1.6
 
 ### Patch Changes
