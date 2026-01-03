@@ -8,6 +8,7 @@ import {
 
 import {
   BaseVectorStore,
+  combineResults,
   DEFAULT_COLLECTION,
   Document,
   FilterCondition,
@@ -16,7 +17,6 @@ import {
   type BaseNode,
   type Metadata,
   type MetadataFilter,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -52,7 +52,6 @@ export class LibSQLVectorStore extends BaseVectorStore {
   private collection: string = DEFAULT_COLLECTION;
   private readonly tableName: string = LIBSQL_TABLE;
   private readonly dimensions: number = DEFAULT_DIMENSIONS;
-  private readonly clientUrl?: string | undefined;
 
   private clientInstance: Client;
   private initialized: boolean = false;
@@ -64,10 +63,9 @@ export class LibSQLVectorStore extends BaseVectorStore {
         dimensions?: number;
         collection?: string;
         clientConfig?: LibSQLClientConfig;
-      }> &
-      VectorStoreBaseParams,
+      }>,
   ) {
-    super(init);
+    super();
 
     this.collection = init.collection ?? DEFAULT_COLLECTION;
     this.tableName = init.tableName ?? LIBSQL_TABLE;
@@ -86,8 +84,6 @@ export class LibSQLVectorStore extends BaseVectorStore {
       }
       this.clientInstance = createClient(clientConfig);
     }
-
-    this.clientUrl = clientConfig?.url;
   }
 
   setCollection(coll: string) {
@@ -176,6 +172,20 @@ export class LibSQLVectorStore extends BaseVectorStore {
       await client.execute(vectorIndexStatement);
     } catch (e) {
       console.warn("Failed to create vector index:", e);
+    }
+
+    // Create FTS5 virtual table for full-text search (bm25/hybrid modes)
+    try {
+      const ftsStatement: InStatement = {
+        sql: `
+          CREATE VIRTUAL TABLE IF NOT EXISTS ${this.tableName}_fts
+          USING fts5(id, document, content='${this.tableName}', content_rowid='rowid')
+        `,
+        args: [],
+      };
+      await client.execute(ftsStatement);
+    } catch (e) {
+      console.warn("Failed to create FTS5 table:", e);
     }
   }
 
@@ -313,26 +323,6 @@ export class LibSQLVectorStore extends BaseVectorStore {
     return [];
   }
 
-  private cosineSimilarity(a: number[], b: number[]): number {
-    const len = Math.min(a.length, b.length);
-    if (len === 0) return 0;
-
-    let dot = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < len; i += 1) {
-      const aVal = a[i] ?? 0;
-      const bVal = b[i] ?? 0;
-      dot += aVal * bVal;
-      normA += aVal * aVal;
-      normB += bVal * bVal;
-    }
-
-    if (normA === 0 || normB === 0) return 0;
-
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
-
   private toLibSQLCondition(condition: `${FilterCondition}`) {
     switch (condition) {
       case FilterCondition.AND:
@@ -432,7 +422,21 @@ export class LibSQLVectorStore extends BaseVectorStore {
     query: VectorStoreQuery,
     _options?: object,
   ): Promise<VectorStoreQueryResult> {
-    const max = query.similarityTopK ?? 2;
+    await this.ensureInitialized();
+
+    if (query.mode === "bm25") {
+      return this.bm25Search(query);
+    } else if (query.mode === "hybrid") {
+      return this.hybridSearch(query);
+    } else {
+      return this.vectorSearch(query);
+    }
+  }
+
+  private buildWhereClause(query: VectorStoreQuery): {
+    where: string;
+    params: unknown[];
+  } {
     const whereClauses: string[] = [];
     const params: unknown[] = [];
 
@@ -460,93 +464,192 @@ export class LibSQLVectorStore extends BaseVectorStore {
     const where =
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    await this.ensureInitialized();
+    return { where, params };
+  }
 
+  private async vectorSearch(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
+    const max = query.similarityTopK ?? 2;
     const queryEmbedding = query.queryEmbedding ?? [];
-    const hasQueryEmbedding = queryEmbedding.length > 0;
 
-    if (hasQueryEmbedding) {
-      const vectorJson = `[${queryEmbedding.join(",")}]`;
-      const vectorArgs = toInArgs([vectorJson, ...params]);
-      const vectorStatement: InStatement = {
-        sql: `
-          SELECT *, vector_distance_cos(embeddings, vector32(?)) as distance
-          FROM ${this.tableName}
-          ${where}
-          ORDER BY distance
-          LIMIT ${max}
-        `,
-        args: vectorArgs,
-      };
-
-      try {
-        const vectorResults =
-          await this.clientInstance.execute(vectorStatement);
-        return this.mapQueryResult(vectorResults.rows, queryEmbedding, max);
-      } catch (err) {
-        console.warn(
-          "libSQL vector_distance_cos unavailable, falling back to JS similarity:",
-          err,
-        );
-      }
+    if (!queryEmbedding.length) {
+      return { nodes: [], similarities: [], ids: [] };
     }
 
-    const baseStatement: InStatement = {
+    const { where, params } = this.buildWhereClause(query);
+    const vectorJson = `[${queryEmbedding.join(",")}]`;
+    const indexName = `idx_${this.tableName}_vector`;
+
+    // Use vector_top_k for efficient ANN search with vector index
+    // Fetch more candidates to account for filtering
+    const prefetch = where ? max * 5 : max;
+
+    const vectorStatement: InStatement = {
       sql: `
-        SELECT *
-        FROM ${this.tableName}
-        ${where}
+        SELECT t.*, vector_distance_cos(t.embeddings, vector32(?)) as distance
+        FROM vector_top_k('${indexName}', vector32(?), ${prefetch}) AS v
+        JOIN ${this.tableName} t ON t.rowid = v.id
+        ${where.replace(/collection/g, "t.collection").replace(/metadata/g, "t.metadata")}
+        ORDER BY distance
+        LIMIT ${max}
       `,
-      args: toInArgs(params),
+      args: toInArgs([vectorJson, vectorJson, ...params]),
     };
-    const results = await this.clientInstance.execute(baseStatement);
 
-    const mapped = this.mapQueryResult(results.rows, queryEmbedding, max);
+    const vectorResults = await this.clientInstance.execute(vectorStatement);
+    return this.mapVectorResult(vectorResults.rows, max);
+  }
 
-    return mapped;
+  private async bm25Search(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
+    const max = query.similarityTopK ?? 2;
+
+    if (!query.queryStr) {
+      throw new Error("queryStr is required for BM25 mode");
+    }
+
+    const { where, params } = this.buildWhereClause(query);
+
+    // Use FTS5 for BM25 search
+    const ftsStatement: InStatement = {
+      sql: `
+        SELECT v.*, bm25(${this.tableName}_fts) as score
+        FROM ${this.tableName}_fts fts
+        JOIN ${this.tableName} v ON fts.rowid = v.rowid
+        ${where.replace(/collection/g, "v.collection").replace(/metadata/g, "v.metadata")}
+        ${where ? "AND" : "WHERE"} ${this.tableName}_fts MATCH ?
+        ORDER BY score
+        LIMIT ${max}
+      `,
+      args: toInArgs([...params, query.queryStr]),
+    };
+
+    try {
+      const results = await this.clientInstance.execute(ftsStatement);
+      return this.mapBm25Result(results.rows, max);
+    } catch (err) {
+      console.warn("FTS5 search failed:", err);
+      throw new Error(`BM25 search failed: ${err}`);
+    }
+  }
+
+  private async hybridSearch(
+    query: VectorStoreQuery,
+  ): Promise<VectorStoreQueryResult> {
+    const max = query.similarityTopK ?? 2;
+    const queryEmbedding = query.queryEmbedding ?? [];
+
+    if (!queryEmbedding.length) {
+      throw new Error("queryEmbedding is required for HYBRID mode");
+    }
+    if (!query.queryStr) {
+      throw new Error("queryStr is required for HYBRID mode");
+    }
+
+    const alpha = query.alpha ?? 0.5;
+    const prefetch = query.hybridPrefetch ?? max * 5;
+
+    // Step 1: Get vector search results
+    const vectorQuery: VectorStoreQuery = {
+      ...query,
+      similarityTopK: prefetch,
+      mode: "default",
+    };
+    const vectorResults = await this.vectorSearch(vectorQuery);
+
+    // Step 2: Get BM25 results
+    const bm25Query: VectorStoreQuery = {
+      ...query,
+      similarityTopK: prefetch,
+      mode: "bm25",
+    };
+    const bm25Results = await this.bm25Search(bm25Query);
+
+    // Step 3: Combine results using RRF
+    return combineResults(vectorResults, bm25Results, alpha, max);
+  }
+
+  private mapVectorResult(
+    rows: Record<string, unknown>[],
+    max: number,
+  ): VectorStoreQueryResult {
+    const results = rows.slice(0, max).map((row) => {
+      const embedding = this.deserializeEmbedding(row.embeddings);
+      const distance = Number(row.distance ?? 0);
+      const similarity = 1 - distance;
+
+      return {
+        node: new Document({
+          id_: String(row.id),
+          text: String(row.document || ""),
+          metadata:
+            typeof row.metadata === "string"
+              ? JSON.parse(row.metadata)
+              : (row.metadata as Metadata),
+          embedding,
+        }),
+        similarity,
+        id: String(row.id),
+      };
+    });
+
+    return {
+      nodes: results.map((r) => r.node),
+      similarities: results.map((r) => r.similarity),
+      ids: results.map((r) => r.id),
+    };
+  }
+
+  private mapBm25Result(
+    rows: Record<string, unknown>[],
+    max: number,
+  ): VectorStoreQueryResult {
+    const results = rows.slice(0, max).map((row) => {
+      const embedding = this.deserializeEmbedding(row.embeddings);
+      const score = Math.abs(Number(row.score ?? 0));
+
+      return {
+        node: new Document({
+          id_: String(row.id),
+          text: String(row.document || ""),
+          metadata:
+            typeof row.metadata === "string"
+              ? JSON.parse(row.metadata)
+              : (row.metadata as Metadata),
+          embedding,
+        }),
+        similarity: score,
+        id: String(row.id),
+      };
+    });
+
+    return {
+      nodes: results.map((r) => r.node),
+      similarities: results.map((r) => r.similarity),
+      ids: results.map((r) => r.id),
+    };
   }
 
   persist(_persistPath: string): Promise<void> {
     return Promise.resolve();
   }
 
-  private mapQueryResult(
-    rows: Record<string, unknown>[],
-    queryEmbedding: number[],
-    max: number,
-  ): VectorStoreQueryResult {
-    const scored = rows.map((row: Record<string, unknown>) => {
-      const embedding = this.deserializeEmbedding(row.embeddings);
-      const distance = row.distance;
-      const similarity =
-        distance !== undefined
-          ? 1 - Number(distance)
-          : queryEmbedding.length && embedding.length
-            ? this.cosineSimilarity(queryEmbedding, embedding)
-            : 0;
-      const node = new Document({
-        id_: String(row.id),
-        text: String(row.document || ""),
-        metadata:
-          typeof row.metadata === "string"
-            ? JSON.parse(row.metadata)
-            : (row.metadata as Metadata),
-        embedding,
-      });
-      return {
-        node,
-        similarity,
-        id: String(row.id),
-      };
+  async exists(refDocId: string): Promise<boolean> {
+    await this.ensureInitialized();
+    const collectionCriteria = this.collection.length
+      ? "AND collection = ?"
+      : "";
+    const sql = `SELECT 1 FROM ${this.tableName}
+                 WHERE json_extract(metadata, '$.ref_doc_id') = ? ${collectionCriteria} LIMIT 1`;
+    const params = this.collection.length
+      ? [refDocId, this.collection]
+      : [refDocId];
+    const results = await this.clientInstance.execute({
+      sql,
+      args: toInArgs(params),
     });
-
-    scored.sort((a, b) => b.similarity - a.similarity);
-    const top = scored.slice(0, max);
-
-    return {
-      nodes: top.map((row) => row.node),
-      similarities: top.map((row) => row.similarity),
-      ids: top.map((row) => row.id),
-    };
+    return results.rows.length > 0;
   }
 }

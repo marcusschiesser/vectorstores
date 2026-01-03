@@ -4,6 +4,7 @@ import {
   FilterCondition,
   FilterOperator,
   MetadataFilters,
+  MetadataMode,
   TextNode,
   VectorStoreQuery,
   VectorStoreQueryMode,
@@ -437,8 +438,181 @@ describe("LibSQLVectorStore", () => {
 
       expect(configStore).toBeDefined();
 
-      const db = await configStore.client();
+      const db = configStore.client();
       expect(db).toBeDefined();
+    });
+  });
+
+  describe("Query Modes", () => {
+    beforeEach(async () => {
+      // Add test data with text content for FTS
+      const nodes: BaseNode<Metadata>[] = [
+        new TextNode({
+          text: "Machine learning and artificial intelligence are transforming technology",
+          embedding: [1.0, 0.0],
+          metadata: { category: "technology", topic: "ai" },
+        }),
+        new TextNode({
+          text: "Cooking recipes and food preparation techniques",
+          embedding: [0.0, 1.0],
+          metadata: { category: "food", topic: "cooking" },
+        }),
+        new TextNode({
+          text: "Deep learning neural networks for artificial intelligence",
+          embedding: [0.8, 0.2],
+          metadata: { category: "technology", topic: "ai" },
+        }),
+      ];
+
+      await store.add(nodes);
+    });
+
+    it("should query using default mode (vector search)", async () => {
+      const query: VectorStoreQuery = {
+        queryEmbedding: [0.9, 0.1],
+        similarityTopK: 2,
+        mode: VectorStoreQueryMode.DEFAULT,
+      };
+
+      const result = await store.query(query);
+
+      expect(result.nodes).toHaveLength(2);
+      expect(result.similarities).toHaveLength(2);
+      expect(result.ids).toHaveLength(2);
+      // First result should be more similar (closer to [1.0, 0.0])
+      expect(result.similarities[0]).toBeGreaterThan(result.similarities[1]);
+    });
+
+    it("should query using bm25 mode (full-text search)", async () => {
+      const query: VectorStoreQuery = {
+        queryStr: "artificial intelligence",
+        similarityTopK: 2,
+        mode: "bm25" as VectorStoreQueryMode,
+      };
+
+      const result = await store.query(query);
+
+      expect(result.nodes).toBeDefined();
+      expect(result.similarities).toBeDefined();
+      expect(result.ids).toBeDefined();
+      // Should find documents containing "artificial intelligence"
+      if (result.nodes && result.nodes.length > 0) {
+        result.nodes.forEach((node) => {
+          const text = node.getContent(MetadataMode.NONE).toLowerCase();
+          expect(
+            text.includes("artificial") || text.includes("intelligence"),
+          ).toBe(true);
+        });
+      }
+    });
+
+    it("should throw error for bm25 mode without queryStr", async () => {
+      const query: VectorStoreQuery = {
+        queryEmbedding: [0.5, 0.5],
+        similarityTopK: 2,
+        mode: "bm25" as VectorStoreQueryMode,
+      };
+
+      await expect(store.query(query)).rejects.toThrow(
+        "queryStr is required for BM25 mode",
+      );
+    });
+
+    it("should query using hybrid mode (vector + FTS)", async () => {
+      const query: VectorStoreQuery = {
+        queryEmbedding: [0.9, 0.1],
+        queryStr: "artificial intelligence",
+        similarityTopK: 2,
+        mode: "hybrid" as VectorStoreQueryMode,
+        alpha: 0.5,
+      };
+
+      const result = await store.query(query);
+
+      expect(result.nodes).toBeDefined();
+      expect(result.similarities).toBeDefined();
+      expect(result.ids).toBeDefined();
+    });
+
+    it("should throw error for hybrid mode without queryEmbedding", async () => {
+      const query: VectorStoreQuery = {
+        queryStr: "artificial intelligence",
+        similarityTopK: 2,
+        mode: "hybrid" as VectorStoreQueryMode,
+      };
+
+      await expect(store.query(query)).rejects.toThrow(
+        "queryEmbedding is required for HYBRID mode",
+      );
+    });
+
+    it("should throw error for hybrid mode without queryStr", async () => {
+      const query: VectorStoreQuery = {
+        queryEmbedding: [0.5, 0.5],
+        similarityTopK: 2,
+        mode: "hybrid" as VectorStoreQueryMode,
+      };
+
+      await expect(store.query(query)).rejects.toThrow(
+        "queryStr is required for HYBRID mode",
+      );
+    });
+
+    it("should fallback to vector search for unknown query mode", async () => {
+      const query: VectorStoreQuery = {
+        queryEmbedding: [0.5, 0.5],
+        similarityTopK: 2,
+        mode: "unknown_mode" as VectorStoreQueryMode,
+      };
+
+      const result = await store.query(query);
+
+      // Should fallback to vector search and return results
+      expect(result.nodes).toBeDefined();
+      expect(result.similarities).toBeDefined();
+      expect(result.ids).toBeDefined();
+    });
+  });
+
+  describe("exists", () => {
+    it("should return true for existing document", async () => {
+      const nodes: BaseNode<Metadata>[] = [
+        new TextNode({
+          id_: "doc-123",
+          embedding: [0.1, 0.2],
+          metadata: { ref_doc_id: "ref-doc-1" },
+        }),
+      ];
+
+      await store.add(nodes);
+
+      const exists = await store.exists("ref-doc-1");
+      expect(exists).toBe(true);
+    });
+
+    it("should return false for non-existing document", async () => {
+      const exists = await store.exists("non-existent-ref");
+      expect(exists).toBe(false);
+    });
+
+    it("should respect collection when checking existence", async () => {
+      store.setCollection("collection-a");
+
+      const nodes: BaseNode<Metadata>[] = [
+        new TextNode({
+          embedding: [0.1, 0.2],
+          metadata: { ref_doc_id: "ref-doc-collection" },
+        }),
+      ];
+
+      await store.add(nodes);
+
+      // Should find in same collection
+      expect(await store.exists("ref-doc-collection")).toBe(true);
+
+      // Should not find in different collection
+      store.setCollection("collection-b");
+      expect(await store.exists("ref-doc-collection")).toBe(false);
     });
   });
 });
