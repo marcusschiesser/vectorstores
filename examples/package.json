@@ -29,6 +29,7 @@
     "@vectorstores/env": "latest",
     "@vectorstores/excel": "latest",
     "@vectorstores/firestore": "latest",
+    "@vectorstores/libsql": "latest",
     "@vectorstores/milvus": "latest",
     "@vectorstores/mongodb": "latest",
     "@vectorstores/node-parser": "latest",
