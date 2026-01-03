@@ -2,9 +2,7 @@ import {
   Document,
   MetadataFilters,
   Settings,
-  SimpleDocumentStore,
   VectorStoreIndex,
-  storageContextFromDefaults,
 } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
@@ -13,17 +11,9 @@ async function getDataSource() {
     new Document({ text: "The dog is brown", metadata: { dogId: "1" } }),
     new Document({ text: "The dog is yellow", metadata: { dogId: "2" } }),
   ];
-  const storageContext = await storageContextFromDefaults({
+
+  return await VectorStoreIndex.fromDocuments(docs, {
     persistDir: "./cache",
-  });
-  const numberOfDocs = Object.keys(
-    (storageContext.docStore as SimpleDocumentStore).toDict(),
-  ).length;
-  if (numberOfDocs === 0) {
-    return await VectorStoreIndex.fromDocuments(docs, { storageContext });
-  }
-  return await VectorStoreIndex.init({
-    storageContext,
   });
 }
 

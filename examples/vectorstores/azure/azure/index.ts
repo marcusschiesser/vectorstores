@@ -16,41 +16,18 @@ import {
   FilterOperator,
   type Metadata,
   type NodeWithScore,
-  storageContextFromDefaults,
-  type TextNode,
   VectorStoreIndex,
-  VectorStoreQueryMode,
 } from "@vectorstores/core";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import dotenv from "dotenv";
 
 import { useOpenAIEmbedding } from "../../../shared/utils/embedding";
+import { formatRetrieverResponse } from "../../../shared/utils/format-response";
 
 dotenv.config();
 
-function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
-  response.forEach((nodeWithScore: NodeWithScore) => {
-    const node = nodeWithScore.node as TextNode;
-    const score = nodeWithScore.score;
-    const chunkId = node.id_;
-
-    // Retrieve metadata fields
-    const fileName = node.metadata?.file_name || "Unknown";
-    const filePath = node.metadata?.file_path || "Unknown";
-    const textContent = node.text || "No content available";
-
-    // Output the results
-    console.log("=".repeat(40) + " Start of Result " + "=".repeat(40) + "\n");
-    console.log(`Search Mode: ${mode}`);
-    console.log(`Score: ${score}`);
-    console.log(`File Name: ${fileName}`);
-    console.log(`File Path: ${filePath}`);
-    console.log(`Id: ${chunkId}`);
-    console.log("\nDocument:");
-    console.log(JSON.stringify(node, null, 2));
-    console.log("\nExtracted Content:");
-    console.log(textContent);
-  });
+function processResults(response: NodeWithScore[]) {
+  console.log(formatRetrieverResponse(response, { showMetadata: true }));
 }
 
 // Based on Azure AI Search Index Demo example
@@ -144,11 +121,10 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
   const documents = await new SimpleDirectoryReader().loadData(
     "data/paul_graham/",
   );
-  const storageContext = await storageContextFromDefaults({ vectorStore });
 
-  // // Create index from documents with the specified storage context
+  // // Create index from documents with the specified vector store
   const index = await VectorStoreIndex.fromDocuments(documents, {
-    storageContext,
+    vectorStore,
     docStoreStrategy: DocStoreStrategy.UPSERTS,
   });
 
@@ -238,7 +214,7 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
       const response = await retriever.retrieve({
         query: "What is inception about?",
       });
-      processResults(response, VectorStoreQueryMode.DEFAULT);
+      processResults(response);
     } // Stephen King
   } catch (error) {
     console.error(error);
@@ -253,7 +229,7 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
     const response = await retriever.retrieve({
       query: "What is the meaning of life?",
     });
-    processResults(response, VectorStoreQueryMode.DEFAULT);
+    processResults(response);
   }
 
   // 6b- Perform a Hybrid Search
@@ -262,7 +238,7 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
     const response = await retriever.retrieve({
       query: "What is the meaning of life?",
     });
-    processResults(response, VectorStoreQueryMode.HYBRID);
+    processResults(response);
   }
 
   // 6c- Perform a Hybrid Search with Semantic Reranking
@@ -271,6 +247,6 @@ function processResults(response: NodeWithScore[], mode: VectorStoreQueryMode) {
     const response = await retriever.retrieve({
       query: "What is inception about?",
     });
-    processResults(response, VectorStoreQueryMode.SEMANTIC_HYBRID);
+    processResults(response);
   }
 })();

@@ -3,11 +3,10 @@ import {
   type BaseReader,
   type Document,
   type Metadata,
-  ModalityType,
+  type ModalityType,
   splitNodesByType,
   type TransformComponent,
 } from "../schema/index.js";
-import type { BaseDocumentStore } from "../storage/index.js";
 import type {
   BaseVectorStore,
   VectorStoreByType,
@@ -21,7 +20,6 @@ import {
 type TransformRunArgs = {
   inPlace?: boolean;
   cache?: IngestionCache;
-  docStoreStrategy?: TransformComponent;
 };
 
 export async function runTransformations(
@@ -29,14 +27,11 @@ export async function runTransformations(
   transformations: TransformComponent[],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transformOptions: any = {},
-  { inPlace = true, cache, docStoreStrategy }: TransformRunArgs = {},
+  { inPlace = true, cache }: TransformRunArgs = {},
 ): Promise<BaseNode[]> {
   let nodes = nodesToRun;
   if (!inPlace) {
     nodes = [...nodesToRun];
-  }
-  if (docStoreStrategy) {
-    nodes = await docStoreStrategy(nodes);
   }
   for (const transform of transformations) {
     if (cache) {
@@ -61,28 +56,15 @@ export class IngestionPipeline {
   reader?: BaseReader | undefined;
   vectorStore?: BaseVectorStore | undefined;
   vectorStores?: VectorStoreByType | undefined;
-  docStore?: BaseDocumentStore;
   docStoreStrategy: DocStoreStrategy = DocStoreStrategy.UPSERTS;
   cache?: IngestionCache | undefined;
   disableCache: boolean = false;
 
-  private _docStoreStrategy?: TransformComponent;
-
   constructor(init?: Partial<IngestionPipeline>) {
     Object.assign(this, init);
-    if (!this.docStore) {
-      this.docStoreStrategy = DocStoreStrategy.NONE;
-    }
     this.vectorStores =
       this.vectorStores ??
-      (this.vectorStore
-        ? { [ModalityType.TEXT]: this.vectorStore }
-        : undefined);
-    this._docStoreStrategy = createDocStoreStrategy(
-      this.docStoreStrategy,
-      this.docStore,
-      this.vectorStores ? Object.values(this.vectorStores) : undefined,
-    );
+      (this.vectorStore ? { text: this.vectorStore } : undefined);
     if (!this.disableCache) {
       this.cache = new IngestionCache();
     }
@@ -112,45 +94,56 @@ export class IngestionPipeline {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async run(args: any = {}, transformOptions?: any): Promise<BaseNode[]> {
     args.cache = args.cache ?? this.cache;
-    args.docStoreStrategy = args.docStoreStrategy ?? this._docStoreStrategy;
     const inputNodes = await this.prepareInput(args.documents, args.nodes);
     const nodes = await runTransformations(
       inputNodes,
       this.transformations,
       transformOptions,
-      args,
+      { cache: args.cache },
     );
     if (this.vectorStores) {
       const nodesToAdd = nodes.filter((node) => node.embedding);
-      await addNodesToVectorStores(nodesToAdd, this.vectorStores);
+      await addNodesToVectorStores(
+        nodesToAdd,
+        this.vectorStores,
+        this.docStoreStrategy,
+      );
     }
     return nodes;
   }
 }
 
+/**
+ * Add nodes to vector stores, with optional per-store deduplication.
+ * Nodes are split by modality type and each type's nodes are deduplicated
+ * against their respective vector store before being added.
+ */
 export async function addNodesToVectorStores(
   nodes: BaseNode<Metadata>[],
   vectorStores: VectorStoreByType,
-  nodesAdded?: (
-    newIds: string[],
-    nodes: BaseNode<Metadata>[],
-    vectorStore: BaseVectorStore,
-  ) => Promise<void>,
+  docStoreStrategy: DocStoreStrategy = DocStoreStrategy.NONE,
 ) {
   const nodeMap = splitNodesByType(nodes);
+
   for (const type in nodeMap) {
-    const nodes = nodeMap[type as ModalityType];
-    if (nodes) {
-      const vectorStore = vectorStores[type as ModalityType];
-      if (!vectorStore) {
-        throw new Error(
-          `Cannot insert nodes of type ${type} without assigned vector store`,
-        );
-      }
-      const newIds = await vectorStore.add(nodes);
-      if (nodesAdded) {
-        await nodesAdded(newIds, nodes, vectorStore);
-      }
+    let typeNodes = nodeMap[type as ModalityType];
+    if (!typeNodes || typeNodes.length === 0) continue;
+
+    const vectorStore = vectorStores[type as ModalityType];
+    if (!vectorStore) {
+      throw new Error(
+        `Cannot insert nodes of type ${type} without assigned vector store`,
+      );
+    }
+
+    // Apply deduplication strategy per store
+    if (docStoreStrategy !== DocStoreStrategy.NONE) {
+      const strategy = createDocStoreStrategy(docStoreStrategy, vectorStore);
+      typeNodes = await strategy(typeNodes);
+    }
+
+    if (typeNodes.length > 0) {
+      await vectorStore.add(typeNodes);
     }
   }
 }

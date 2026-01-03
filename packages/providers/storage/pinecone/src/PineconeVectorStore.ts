@@ -1,24 +1,23 @@
-import {
-  BaseVectorStore,
-  FilterCondition,
-  FilterOperator,
-  type MetadataFilter,
-  type MetadataFilters,
-  type VectorStoreBaseParams,
-  type VectorStoreQuery,
-  type VectorStoreQueryResult,
-} from "@vectorstores/core";
-
 import type {
   FetchResponse,
   Index,
+  Pinecone,
   PineconeRecord,
   QueryOptions,
   ScoredPineconeRecord,
 } from "@pinecone-database/pinecone";
-import { type Pinecone } from "@pinecone-database/pinecone";
 import type { BaseNode, Metadata } from "@vectorstores/core";
-import { metadataDictToNode, nodeToMetadata } from "@vectorstores/core";
+import {
+  BaseVectorStore,
+  metadataDictToNode,
+  nodeToMetadata,
+  type FilterCondition,
+  type FilterOperator,
+  type MetadataFilter,
+  type MetadataFilters,
+  type VectorStoreQuery,
+  type VectorStoreQueryResult,
+} from "@vectorstores/core";
 import { getEnv } from "@vectorstores/env";
 
 type PineconeParams = {
@@ -27,7 +26,7 @@ type PineconeParams = {
   namespace?: string;
   textKey?: string;
   apiKey?: string;
-} & VectorStoreBaseParams;
+};
 
 /**
  * Provides support for writing and querying vector data in Pinecone.
@@ -52,7 +51,7 @@ export class PineconeVectorStore extends BaseVectorStore {
   apiKey: string;
 
   constructor(params?: PineconeParams) {
-    super(params);
+    super();
     this.indexName =
       params?.indexName ?? getEnv("PINECONE_INDEX_NAME") ?? "llama";
     this.namespace = params?.namespace ?? getEnv("PINECONE_NAMESPACE") ?? "";
@@ -332,5 +331,16 @@ export class PineconeVectorStore extends BaseVectorStore {
       values: node.getEmbedding(),
       metadata: nodeToMetadata(node),
     };
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const idx = await this.index();
+    const results = await idx.query({
+      vector: new Array(1536).fill(0), // dummy vector for metadata query
+      topK: 1,
+      includeMetadata: false,
+      filter: { ref_doc_id: { $eq: refDocId } },
+    });
+    return results.matches.length > 0;
   }
 }

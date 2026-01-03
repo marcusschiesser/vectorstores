@@ -1,10 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import {
-  Document,
-  FilterOperator,
-  MetadataFilters,
-  VectorStoreQueryMode,
-} from "@vectorstores/core";
+import { Document, FilterOperator, MetadataFilters } from "@vectorstores/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SupabaseVectorStore } from "../src";
 
@@ -88,7 +83,7 @@ describe("SupabaseVectorStore", async () => {
       await vectorStore.query({
         queryEmbedding: doc.embedding!,
         similarityTopK: 5,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       });
 
       expect(rpcSpy).toHaveBeenCalledWith("match_documents", {
@@ -119,7 +114,7 @@ describe("SupabaseVectorStore", async () => {
         queryEmbedding: doc.embedding!,
         similarityTopK: 5,
         filters,
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
       });
 
       expect(rpcSpy).toHaveBeenCalledWith("match_documents", {

@@ -1,7 +1,3 @@
-// Schema
-
-// Data Structs
-export * from "./data-structs/index.js";
 // Decorator
 export * from "./decorator/index.js";
 
@@ -26,7 +22,7 @@ export * from "./postprocessor/index.js";
 // Retriever
 export * from "./retriever/index.js";
 export * from "./schema/index.js";
-// Storage (includes kv-store, doc-store, index-store)
+// Storage (includes kv-store)
 export * from "./storage/index.js";
 // Utils
 export * from "./utils/index.js";

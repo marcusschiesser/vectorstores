@@ -1,5 +1,44 @@
 # @vectorstores/cohere
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [f428b0d]
+  - @vectorstores/core@0.1.8
+
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [42c7cc4]
+- Updated dependencies [42c7cc4]
+  - @vectorstores/core@0.1.7
+
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [925bff9]
+  - @vectorstores/core@0.1.6
+
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [25cd6b3]
+  - @vectorstores/core@0.1.5
+
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [84dd436]
+- Updated dependencies [52a2451]
+- Updated dependencies [84dd436]
+- Updated dependencies [52a2451]
+  - @vectorstores/core@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes

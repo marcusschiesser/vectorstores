@@ -1,8 +1,5 @@
 import { AstraDBVectorStore } from "@vectorstores/astra";
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { CSVReader } from "@vectorstores/readers/csv";
 import { fileURLToPath } from "node:url";
 
@@ -29,8 +26,7 @@ async function main() {
     });
     await astraVS.connect(collectionName);
 
-    const ctx = await storageContextFromDefaults({ vectorStore: astraVS });
-    await VectorStoreIndex.fromDocuments(docs, { storageContext: ctx });
+    await VectorStoreIndex.fromDocuments(docs, { vectorStore: astraVS });
   } catch (e) {
     console.error(e);
   }

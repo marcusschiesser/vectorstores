@@ -1,7 +1,7 @@
 {
   "name": "@vectorstores/postgres",
   "description": "PostgreSQL Storage for vectorstores",
-  "version": "0.1.3",
+  "version": "0.1.8",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -45,7 +45,8 @@
     "pgvector": "0.2.0",
     "postgres": "^3.4.4",
     "@vectorstores/core": "workspace:*",
-    "@vectorstores/env": "workspace:*"
+    "@vectorstores/env": "workspace:*",
+    "testcontainers": "^10.11.0"
   },
   "dependencies": {
     "pg": "^8.11.3",

@@ -1,8 +1,5 @@
 // load-docs.ts
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { PGVectorStore } from "@vectorstores/postgres";
 import { SimpleDirectoryReader } from "@vectorstores/readers/directory";
 import fs from "node:fs/promises";
@@ -49,11 +46,9 @@ async function main(args: any) {
     pgvs.setCollection(sourceDir);
     await pgvs.clearCollection();
 
-    const ctx = await storageContextFromDefaults({ vectorStore: pgvs });
-
     console.debug("  - creating vector store");
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore: pgvs,
     });
     console.debug("  - done.");
   } catch (err) {

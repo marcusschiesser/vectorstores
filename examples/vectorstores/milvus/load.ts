@@ -1,7 +1,4 @@
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import { MilvusVectorStore } from "@vectorstores/milvus";
 import { CSVReader } from "@vectorstores/readers/csv";
 import { fileURLToPath } from "node:url";
@@ -23,8 +20,7 @@ async function main() {
     );
 
     const vectorStore = new MilvusVectorStore({ collection: collectionName });
-    const ctx = await storageContextFromDefaults({ vectorStore });
-    await VectorStoreIndex.fromDocuments(docs, { storageContext: ctx });
+    await VectorStoreIndex.fromDocuments(docs, { vectorStore });
   } catch (e) {
     console.error(e);
   }

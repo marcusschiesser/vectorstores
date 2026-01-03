@@ -1,17 +1,16 @@
+import type { QdrantClientParams, Schemas } from "@qdrant/js-client-rest";
+import { QdrantClient } from "@qdrant/js-client-rest";
 import type { BaseNode, Metadata } from "@vectorstores/core";
 import {
   BaseVectorStore,
   FilterCondition,
   FilterOperator,
+  metadataDictToNode,
+  nodeToMetadata,
   type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
-
-import type { QdrantClientParams, Schemas } from "@qdrant/js-client-rest";
-import { QdrantClient } from "@qdrant/js-client-rest";
-import { metadataDictToNode, nodeToMetadata } from "@vectorstores/core";
 
 type QdrantFilter = Schemas["Filter"];
 type QdrantMustConditions = QdrantFilter["must"];
@@ -30,7 +29,7 @@ type QdrantParams = {
   url?: string;
   apiKey?: string;
   batchSize?: number;
-} & VectorStoreBaseParams;
+};
 
 /**
  * Qdrant vector store.
@@ -59,9 +58,8 @@ export class QdrantVectorStore extends BaseVectorStore {
     url,
     apiKey,
     batchSize,
-    ...init
   }: QdrantParams) {
-    super(init);
+    super();
     if (!client && !url) {
       if (!url) {
         throw new Error("QdrantVectorStore requires url and collectionName");
@@ -278,10 +276,6 @@ export class QdrantVectorStore extends BaseVectorStore {
     let queryFilters: QdrantFilter | undefined;
     let searchParams: QdrantSearchParams | undefined;
 
-    if (!query.queryEmbedding) {
-      throw new Error("No query embedding provided");
-    }
-
     if (qdrantFilters) {
       queryFilters = qdrantFilters;
     } else {
@@ -294,8 +288,17 @@ export class QdrantVectorStore extends BaseVectorStore {
       searchParams = buildSearchParams(query);
     }
 
+    const queryVector = query.queryEmbedding;
+    if (!queryVector) {
+      throw new Error(
+        "Qdrant vector search requires a dense query embedding, even when falling back from BM25 or HYBRID modes.",
+      );
+    }
+
+    // For now, Qdrant implementation only supports dense vector search.
+    // BM25 and HYBRID will fallback to dense vector search if no sparse vectors are configured.
     const result = (await this.db.query(this.collectionName, {
-      query: query.queryEmbedding,
+      query: queryVector,
       limit: query.similarityTopK,
       with_payload: true,
       with_vector: false,
@@ -304,6 +307,17 @@ export class QdrantVectorStore extends BaseVectorStore {
     })) as QdrantQueryResult;
 
     return this.parseToQueryResult(result);
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const result = (await this.db.scroll(this.collectionName, {
+      filter: {
+        must: [{ key: "doc_id", match: { value: refDocId } }],
+      },
+      limit: 1,
+      with_payload: false,
+    })) as { points: Array<unknown> };
+    return result.points.length > 0;
   }
 }
 

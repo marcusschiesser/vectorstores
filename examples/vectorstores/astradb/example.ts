@@ -2,7 +2,6 @@ import { AstraDBVectorStore } from "@vectorstores/astra";
 import {
   Document,
   type MetadataFilters,
-  storageContextFromDefaults,
   VectorStoreIndex,
 } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
@@ -40,9 +39,8 @@ async function main() {
       vector: { dimension: 1536, metric: "cosine" },
     });
 
-    const ctx = await storageContextFromDefaults({ vectorStore: astraVS });
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore: astraVS,
     });
     const filters: MetadataFilters = {
       filters: [{ key: "id", operator: "in", value: [123, 789] }],

@@ -125,7 +125,7 @@ const index = await VectorStoreIndex.fromDocuments([document]);
 
 - The document is read from the filesystem
 - A `Document` object is created with the text content and a unique ID
-- `VectorStoreIndex.fromDocuments()` creates a searchable vector index from the document
+- `VectorStoreIndex.fromDocuments()` splits the document into smaller chunks (nodes) and creates a searchable vector index from them
 
 ### 3. Creating a Retriever
 

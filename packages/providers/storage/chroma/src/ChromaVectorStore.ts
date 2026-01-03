@@ -4,11 +4,9 @@ import {
   FilterCondition,
   FilterOperator,
   metadataDictToNode,
+  type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  VectorStoreQueryMode,
-  type MetadataFilters,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -54,14 +52,12 @@ export class ChromaVectorStore extends BaseVectorStore {
   private collection: Collection | null = null;
   private collectionName: string;
 
-  constructor(
-    init: {
-      collectionName: string;
-      textKey?: string;
-      chromaClientParams?: ChromaClientParams;
-    } & VectorStoreBaseParams,
-  ) {
-    super(init);
+  constructor(init: {
+    collectionName: string;
+    textKey?: string;
+    chromaClientParams?: ChromaClientParams;
+  }) {
+    super();
     this.collectionName = init.collectionName;
     this.chromaClient = new ChromaClient(init.chromaClientParams);
     this.textKey = init.textKey ?? DEFAULT_TEXT_KEY;
@@ -104,14 +100,18 @@ export class ChromaVectorStore extends BaseVectorStore {
     return nodes.map((node) => node.id_);
   }
 
+  /**
+   * Deletes all nodes from the collection that belong to the given document.
+   * @param refDocId Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions Optional delete parameters for Chroma.
+   */
   async delete(
     refDocId: string,
     deleteOptions?: ChromaDeleteOptions,
   ): Promise<void> {
     const collection = await this.getCollection();
     await collection.delete(<DeleteParams>{
-      ids: [refDocId],
-      where: deleteOptions?.where,
+      where: { ref_doc_id: refDocId, ...deleteOptions?.where },
       whereDocument: deleteOptions?.whereDocument,
     });
   }
@@ -196,7 +196,7 @@ export class ChromaVectorStore extends BaseVectorStore {
     if (query.docIds) {
       throw new Error("ChromaDB does not support querying by docIDs");
     }
-    if (query.mode != VectorStoreQueryMode.DEFAULT) {
+    if (query.mode != "default") {
       throw new Error("ChromaDB does not support querying by mode");
     }
 
@@ -231,5 +231,14 @@ export class ChromaVectorStore extends BaseVectorStore {
       ids: queryResponse.ids[0]!,
     };
     return vectorStoreQueryResult;
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const collection = await this.getCollection();
+    const result = await collection.get({
+      where: { ref_doc_id: refDocId as string },
+      limit: 1,
+    });
+    return result.ids.length > 0;
   }
 }

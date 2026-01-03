@@ -17,7 +17,6 @@ import {
   MetadataMode,
   nodeToMetadata,
   parseArrayValue,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
@@ -41,9 +40,9 @@ export class AstraDBVectorStore extends BaseVectorStore {
         endpoint: string;
         namespace?: string;
       };
-    } & VectorStoreBaseParams,
+    },
   ) {
-    super(init);
+    super();
     const token = init?.params?.token ?? getEnv("ASTRA_DB_APPLICATION_TOKEN");
     const endpoint = init?.params?.endpoint ?? getEnv("ASTRA_DB_API_ENDPOINT");
 
@@ -147,26 +146,26 @@ export class AstraDBVectorStore extends BaseVectorStore {
   }
 
   /**
-   * Delete a document from your Astra DB collection.
+   * Delete all nodes from your Astra DB collection that belong to the given document.
    *
-   * @param refDocId - The id of the document to delete
-   * @param deleteOptions - DeleteOneOptions to pass to the delete query
+   * @param refDocId - Reference document ID - all nodes with this ref_doc_id will be deleted.
+   * @param deleteOptions - DeleteManyOptions to pass to the delete query
    * @returns Promise that resolves if the delete query did not throw an error.
    */
   async delete(
     refDocId: string,
-    deleteOptions?: Parameters<Collection["deleteOne"]>[1],
+    deleteOptions?: Parameters<Collection["deleteMany"]>[1],
   ): Promise<void> {
     if (!this.collection) {
       throw new Error("Must connect to collection before deleting.");
     }
     const collection = this.collection;
 
-    console.debug(`Deleting row with id ${refDocId}`);
+    console.debug(`Deleting all nodes with ref_doc_id ${refDocId}`);
 
-    await collection.deleteOne(
+    await collection.deleteMany(
       {
-        _id: refDocId,
+        ref_doc_id: refDocId,
       },
       deleteOptions,
     );
@@ -264,5 +263,16 @@ export class AstraDBVectorStore extends BaseVectorStore {
       default:
         throw new Error(`Not supported filter operator: ${operator}`);
     }
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    if (!this.collection) {
+      throw new Error("Must connect to collection before querying.");
+    }
+    const result = await this.collection.findOne(
+      { ref_doc_id: refDocId },
+      { projection: { _id: 1 } },
+    );
+    return result !== null;
   }
 }

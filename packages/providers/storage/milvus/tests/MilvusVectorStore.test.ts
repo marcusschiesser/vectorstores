@@ -1,9 +1,5 @@
 import type { BaseNode } from "@vectorstores/core";
-import {
-  TextNode,
-  VectorStoreQueryMode,
-  type MetadataFilters,
-} from "@vectorstores/core";
+import { TextNode, type MetadataFilters } from "@vectorstores/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestableMilvusVectorStore } from "../mocks/TestableMilvusVectorStore";
 import { MilvusVectorStore } from "../src/MilvusVectorStore";
@@ -257,7 +253,7 @@ describe("MilvusVectorStore", () => {
         const result = await store.query({
           queryEmbedding: [0.1, 0.2],
           similarityTopK: 3,
-          mode: VectorStoreQueryMode.DEFAULT,
+          mode: "default",
           filters: tc.filters,
         });
         expect(result.ids).length(tc.expected);

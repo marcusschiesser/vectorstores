@@ -1,17 +1,17 @@
 {
   "name": "@vectorstores/examples",
-  "version": "0.1.1",
+  "version": "0.1.5",
   "private": true,
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "type-check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "start": "echo 'To get started, run `npx tsx <path to example>`'",
     "use-npm": "node ../scripts/use-npm-deps.mjs ./package.json",
     "use-workspace": "node ../scripts/use-workspace-deps.mjs ./package.json"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.76",
+    "@ai-sdk/openai": "^3.0.2",
     "@azure/cosmos": "^4.1.1",
     "@azure/identity": "^4.4.1",
     "@azure/search-documents": "^12.1.0",
@@ -21,7 +21,6 @@
     "@vectorstores/assemblyai": "latest",
     "@vectorstores/astra": "latest",
     "@vectorstores/azure": "latest",
-    "@vectorstores/bm25-retriever": "latest",
     "@vectorstores/chroma": "latest",
     "@vectorstores/cohere": "latest",
     "@vectorstores/core": "latest",
@@ -43,7 +42,7 @@
     "@vectorstores/upstash": "latest",
     "@vectorstores/weaviate": "latest",
     "@vercel/postgres": "^0.10.0",
-    "ai": "^5.0.106",
+    "ai": "^6.0.5",
     "ajv": "^8.17.1",
     "commander": "^12.1.0",
     "dotenv": "^17.2.0",
@@ -55,7 +54,7 @@
     "openai": "^6.10.0",
     "postgres": "^3.4.4",
     "wikipedia": "^2.1.2",
-    "zod": "^4.1.5"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

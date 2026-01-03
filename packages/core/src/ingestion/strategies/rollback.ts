@@ -1,19 +1,25 @@
 import { type BaseNode, TransformComponent } from "../../schema/index.js";
-import type { BaseDocumentStore } from "../../storage/doc-store/index.js";
-import { classify } from "./classify.js";
+import type { BaseVectorStore } from "../../vector-store/index.js";
 
 export class RollbackableTransformComponent extends TransformComponent {
-  // Remove unused docs from the doc store. It is useful in case
-  // generating embeddings fails and we want to remove the unused docs
-  // TODO: override this in UpsertsStrategy if we want to revert removed docs also
+  /**
+   * Remove all nodes for documents that exist in the vector store.
+   * Useful in case generating embeddings fails and we want to remove partially added docs.
+   */
   public async rollback(
-    docStore: BaseDocumentStore,
+    vectorStore: BaseVectorStore,
     nodes: BaseNode[],
   ): Promise<void> {
-    const { unusedDocs } = await classify(docStore, nodes);
-    for (const docId of unusedDocs) {
-      await docStore.deleteDocument(docId, false);
+    const seenIds = new Set<string>();
+    for (const node of nodes) {
+      const refDocId = node.sourceNode?.nodeId || node.id_;
+      if (seenIds.has(refDocId)) continue;
+      seenIds.add(refDocId);
+
+      const exists = await vectorStore.exists(refDocId);
+      if (exists) {
+        await vectorStore.delete(refDocId);
+      }
     }
-    docStore.persist();
   }
 }

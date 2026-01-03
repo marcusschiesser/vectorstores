@@ -1,33 +1,35 @@
 import type { BaseNode } from "../../schema/index.js";
-import type { BaseDocumentStore } from "../../storage/doc-store/base-document-store.js";
 import type { BaseVectorStore } from "../../vector-store/index.js";
-import { classify } from "./classify.js";
 import { RollbackableTransformComponent } from "./rollback.js";
 
 /**
- * Handles doc store upserts by checking hashes and ids.
+ * Handle upserts by deleting existing documents before re-adding.
+ * If a document exists (by ref_doc_id), it is deleted first, then re-added.
+ * Note: This always re-indexes existing documents, even if content hasn't changed.
  */
 export class UpsertsStrategy extends RollbackableTransformComponent {
-  protected docStore: BaseDocumentStore;
-  protected vectorStores: BaseVectorStore[] | undefined;
+  protected vectorStore: BaseVectorStore;
 
-  constructor(docStore: BaseDocumentStore, vectorStores?: BaseVectorStore[]) {
+  constructor(vectorStore: BaseVectorStore) {
     super(async (nodes: BaseNode[]): Promise<BaseNode[]> => {
-      const { dedupedNodes, unusedDocs } = await classify(this.docStore, nodes);
-      // remove unused docs
-      for (const refDocId of unusedDocs) {
-        await this.docStore.deleteRefDoc(refDocId, false);
-        if (this.vectorStores) {
-          for (const vectorStore of this.vectorStores) {
-            await vectorStore.delete(refDocId);
-          }
+      const seenIds = new Set<string>();
+
+      for (const node of nodes) {
+        const refDocId = node.sourceNode?.nodeId || node.id_;
+
+        // Only process each document once
+        if (seenIds.has(refDocId)) continue;
+        seenIds.add(refDocId);
+
+        // Delete existing document (if any) before re-adding
+        const exists = await this.vectorStore.exists(refDocId);
+        if (exists) {
+          await this.vectorStore.delete(refDocId);
         }
       }
-      // add non-duplicate docs
-      await this.docStore.addDocuments(dedupedNodes, true);
-      return dedupedNodes;
+
+      return nodes;
     });
-    this.docStore = docStore;
-    this.vectorStores = vectorStores;
+    this.vectorStore = vectorStore;
   }
 }

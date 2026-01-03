@@ -1,34 +1,34 @@
 import { consoleLogger, fs, type Logger, path } from "@vectorstores/env";
 import {
-  type BaseEmbedding,
   getTopKEmbeddings,
   getTopKMMREmbeddings,
-  type TextEmbedFunc,
 } from "../embeddings/index.js";
 import { DEFAULT_PERSIST_DIR } from "../global/constants.js";
-import type { BaseNode } from "../schema/index.js";
+import { type BaseNode, jsonToNode } from "../schema/index.js";
 import { exists } from "../storage/FileSystem.js";
 import {
   BaseVectorStore,
+  BM25,
+  combineResults,
+  DEFAULT_HYBRID_PREFETCH_MULTIPLIER,
   FilterOperator,
   type MetadataFilter,
   type MetadataFilters,
   nodeToMetadata,
   parseArrayValue,
   parsePrimitiveValue,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
+  type VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "./index.js";
 
 const LEARNER_MODES = new Set<VectorStoreQueryMode>([
-  VectorStoreQueryMode.SVM,
-  VectorStoreQueryMode.LINEAR_REGRESSION,
-  VectorStoreQueryMode.LOGISTIC_REGRESSION,
+  "svm",
+  "linear_regression",
+  "logistic_regression",
 ]);
 
-const MMR_MODE = VectorStoreQueryMode.MMR;
+const MMR_MODE = "mmr";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MetadataValue = Record<string, any>;
@@ -121,31 +121,25 @@ class SimpleVectorStoreData {
   embeddingDict: Record<string, number[]> = {};
   textIdToRefDocId: Record<string, string> = {};
   metadataDict: Record<string, MetadataValue> = {};
+  nodesDict: Record<string, BaseNode> = {};
 }
 
 export class SimpleVectorStore extends BaseVectorStore {
-  storesText: boolean = false;
+  storesText: boolean = true;
   private data: SimpleVectorStoreData;
   private persistPath: string | undefined;
 
-  constructor(
-    init?: {
-      data?: SimpleVectorStoreData | undefined;
-    } & VectorStoreBaseParams,
-  ) {
-    super(init);
+  constructor(init?: { data?: SimpleVectorStoreData | undefined }) {
+    super();
     this.data = init?.data || new SimpleVectorStoreData();
   }
 
   static async fromPersistDir(
     persistDir: string = DEFAULT_PERSIST_DIR,
-    embedModel?: BaseEmbedding,
-    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
+    options?: { logger?: Logger },
   ): Promise<SimpleVectorStore> {
     const persistPath = path.join(persistDir, "vector_store.json");
-    return await SimpleVectorStore.fromPersistPath(persistPath, embedModel, {
-      ...options,
-    });
+    return await SimpleVectorStore.fromPersistPath(persistPath, options);
   }
 
   client() {
@@ -159,6 +153,11 @@ export class SimpleVectorStore extends BaseVectorStore {
   async add(embeddingResults: BaseNode[]): Promise<string[]> {
     for (const node of embeddingResults) {
       this.data.embeddingDict[node.id_] = node.getEmbedding();
+
+      // Store the node (without embedding to save space)
+      const nodeWithoutEmbedding = node.clone();
+      nodeWithoutEmbedding.embedding = undefined;
+      this.data.nodesDict[node.id_] = nodeWithoutEmbedding;
 
       if (!node.sourceNode) {
         continue;
@@ -187,6 +186,7 @@ export class SimpleVectorStore extends BaseVectorStore {
       delete this.data.embeddingDict[textId];
       delete this.data.textIdToRefDocId[textId];
       if (this.data.metadataDict) delete this.data.metadataDict[textId];
+      if (this.data.nodesDict) delete this.data.nodesDict[textId];
     }
     if (this.persistPath) {
       await this.persist(this.persistPath);
@@ -239,20 +239,74 @@ export class SimpleVectorStore extends BaseVectorStore {
         nodeIds,
         mmrThreshold,
       );
-    } else if (query.mode === VectorStoreQueryMode.DEFAULT) {
+    } else if (query.mode === "default") {
       [topSimilarities, topIds] = getTopKEmbeddings(
         queryEmbedding,
         embeddings,
         query.similarityTopK,
         nodeIds,
       );
+    } else if (query.mode === "bm25") {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for BM25 mode");
+      }
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const results = bm25.search(query.queryStr, query.similarityTopK);
+      topSimilarities = results.map((r) => r.score);
+      topIds = results.map((r) => r.id);
+    } else if (query.mode === "hybrid") {
+      if (!query.queryStr) {
+        throw new Error("queryStr is required for HYBRID mode");
+      }
+
+      // Calculate prefetch limit: use configured value or default multiplier
+      const prefetchK =
+        query.hybridPrefetch ??
+        query.similarityTopK * DEFAULT_HYBRID_PREFETCH_MULTIPLIER;
+
+      // Vector search with prefetch
+      const [vSimilarities, vIds] = getTopKEmbeddings(
+        queryEmbedding,
+        embeddings,
+        prefetchK,
+        nodeIds,
+      );
+      const vNodes = vIds.map((id) => this.data.nodesDict[id]!);
+      const vectorResult: VectorStoreQueryResult = {
+        similarities: vSimilarities,
+        ids: vIds,
+        nodes: vNodes,
+      };
+
+      // BM25 search with prefetch
+      const nodes = nodeIds.map((id) => this.data.nodesDict[id]!);
+      const bm25 = new BM25(nodes);
+      const bm25Results = bm25.search(query.queryStr, prefetchK);
+      const bm25Result: VectorStoreQueryResult = {
+        similarities: bm25Results.map((r) => r.score),
+        ids: bm25Results.map((r) => r.id),
+        nodes: bm25Results.map((r) => this.data.nodesDict[r.id]!),
+      };
+
+      // Combine and trim to final topK
+      return combineResults(
+        vectorResult,
+        bm25Result,
+        query.alpha ?? 0.5,
+        query.similarityTopK,
+      );
     } else {
       throw new Error(`Invalid query mode: ${query.mode}`);
     }
 
+    // Get the nodes for the top results
+    const nodes = topIds.map((id) => this.data.nodesDict[id]!);
+
     return Promise.resolve({
       similarities: topSimilarities,
       ids: topIds,
+      nodes,
     });
   }
 
@@ -276,8 +330,7 @@ export class SimpleVectorStore extends BaseVectorStore {
 
   static async fromPersistPath(
     persistPath: string,
-    embedModel?: BaseEmbedding,
-    options?: { logger?: Logger; embedFunc?: TextEmbedFunc | undefined },
+    options?: { logger?: Logger },
   ): Promise<SimpleVectorStore> {
     const logger = options?.logger ?? consoleLogger;
     const dirPath = path.dirname(persistPath);
@@ -306,24 +359,24 @@ export class SimpleVectorStore extends BaseVectorStore {
     data.textIdToRefDocId = dataDict.textIdToRefDocId ?? {};
     // @ts-expect-error TS2322
     data.metadataDict = dataDict.metadataDict ?? {};
-    const store = new SimpleVectorStore({
-      data,
-      embedModel,
-      embedFunc: options?.embedFunc,
-    });
+    // Parse nodes from JSON
+    const nodesDictJson = (dataDict.nodesDict ?? {}) as Record<string, unknown>;
+    data.nodesDict = {};
+    for (const [id, nodeJson] of Object.entries(nodesDictJson)) {
+      data.nodesDict[id] = jsonToNode(nodeJson);
+    }
+    const store = new SimpleVectorStore({ data });
     store.persistPath = persistPath;
     return store;
   }
 
-  static fromDict(
-    saveDict: SimpleVectorStoreData,
-    embedModel?: BaseEmbedding,
-  ): SimpleVectorStore {
+  static fromDict(saveDict: SimpleVectorStoreData): SimpleVectorStore {
     const data = new SimpleVectorStoreData();
     data.embeddingDict = saveDict.embeddingDict;
     data.textIdToRefDocId = saveDict.textIdToRefDocId;
     data.metadataDict = saveDict.metadataDict;
-    return new SimpleVectorStore({ data, embedModel });
+    data.nodesDict = saveDict.nodesDict ?? {};
+    return new SimpleVectorStore({ data });
   }
 
   toDict(): SimpleVectorStoreData {
@@ -331,6 +384,11 @@ export class SimpleVectorStore extends BaseVectorStore {
       embeddingDict: this.data.embeddingDict,
       textIdToRefDocId: this.data.textIdToRefDocId,
       metadataDict: this.data.metadataDict,
+      nodesDict: this.data.nodesDict,
     };
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    return Object.values(this.data.textIdToRefDocId).includes(refDocId);
   }
 }

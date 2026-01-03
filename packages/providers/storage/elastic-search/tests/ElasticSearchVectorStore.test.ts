@@ -4,7 +4,6 @@ import {
   NodeRelationship,
   ObjectType,
   Settings,
-  VectorStoreQueryMode,
 } from "@vectorstores/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ElasticSearchVectorStore } from "../src";
@@ -118,7 +117,7 @@ describe("ElasticSearchVectorStore", async () => {
       expect(ids).toEqual(["id1", "id2"]);
 
       const result = await vectorStore.query({
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
         similarityTopK: 1,
         queryEmbedding: [0.1, 0.2, 0.3],
       });
@@ -154,7 +153,7 @@ describe("ElasticSearchVectorStore", async () => {
       await vectorStore.delete(nodes[0]?.id_ ?? "");
 
       const result = await vectorStore.query({
-        mode: VectorStoreQueryMode.DEFAULT,
+        mode: "default",
         similarityTopK: 1,
         queryEmbedding: [0.4, 0.5, 0.6],
       });

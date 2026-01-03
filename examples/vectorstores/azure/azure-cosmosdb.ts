@@ -1,21 +1,13 @@
 import "dotenv/config";
 
-import {
-  AzureCosmosDBNoSqlVectorStore,
-  AzureCosmosNoSqlDocumentStore,
-  AzureCosmosNoSqlIndexStore,
-} from "@vectorstores/azure";
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { AzureCosmosDBNoSqlVectorStore } from "@vectorstores/azure";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
 
 /**
  * This example demonstrates how to use Azure CosmosDB with vectorstores.
- * It uses Azure CosmosDB as IndexStore, DocumentStore, and VectorStore.
+ * It uses Azure CosmosDB as VectorStore.
  *
  * To run this example, create an .env file under /examples and set the following environment variables:
  *
@@ -29,22 +21,12 @@ import { useOpenAIEmbedding } from "../../shared/utils/embedding";
   // Use OpenAI embeddings
   useOpenAIEmbedding();
 
-  const docStore = AzureCosmosNoSqlDocumentStore.fromAadToken();
-  console.log({ docStore });
-  const indexStore = AzureCosmosNoSqlIndexStore.fromAadToken();
-  console.log({ indexStore });
   const vectorStore = AzureCosmosDBNoSqlVectorStore.fromUriAndManagedIdentity();
   console.log({ vectorStore });
-  const storageContext = await storageContextFromDefaults({
-    docStore,
-    indexStore,
-    vectorStore,
-  });
-  console.log({ storageContext });
 
   const document = new Document({ text: "Test Text" });
   const index = await VectorStoreIndex.fromDocuments([document], {
-    storageContext,
+    vectorStore,
     logProgress: true,
   });
 

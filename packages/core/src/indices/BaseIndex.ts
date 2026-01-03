@@ -1,34 +1,27 @@
+import type { EmbeddingsByType } from "../embeddings/index.js";
 import { Settings } from "../global/settings.js";
 import { runTransformations } from "../ingestion/IngestionPipeline.js";
 import { SentenceSplitter } from "../node-parser/index.js";
 import type { BaseRetriever } from "../retriever/index.js";
 import type { BaseNode, Document } from "../schema/node.js";
-import type { BaseDocumentStore } from "../storage/doc-store/base-document-store.js";
-import type { BaseIndexStore } from "../storage/index-store/index.js";
-import type { StorageContext } from "../storage/StorageContext.js";
+import type { VectorStoreByType } from "../vector-store/index.js";
 
-export interface BaseIndexInit<T> {
-  storageContext: StorageContext;
-  docStore: BaseDocumentStore;
-  indexStore?: BaseIndexStore | undefined;
-  indexStruct: T;
+export interface BaseIndexInit {
+  vectorStores: VectorStoreByType;
+  embeddings: EmbeddingsByType;
 }
 
 /**
  * Indexes are the data structure that we store our nodes and embeddings in so
  * they can be retrieved for our queries.
  */
-export abstract class BaseIndex<T> {
-  storageContext: StorageContext;
-  docStore: BaseDocumentStore;
-  indexStore?: BaseIndexStore | undefined;
-  indexStruct: T;
+export abstract class BaseIndex {
+  vectorStores: VectorStoreByType;
+  embeddings: EmbeddingsByType;
 
-  constructor(init: BaseIndexInit<T>) {
-    this.storageContext = init.storageContext;
-    this.docStore = init.docStore;
-    this.indexStore = init.indexStore;
-    this.indexStruct = init.indexStruct;
+  constructor(init: BaseIndexInit) {
+    this.vectorStores = init.vectorStores;
+    this.embeddings = init.embeddings;
   }
 
   /**
@@ -55,14 +48,10 @@ export abstract class BaseIndex<T> {
       });
     const nodes = await runTransformations([document], [nodeParser]);
     await this.insertNodes(nodes);
-    await this.docStore.setDocumentHash(document.id_, document.hash);
   }
 
   abstract insertNodes(nodes: BaseNode[]): Promise<void>;
-  abstract deleteRefDoc(
-    refDocId: string,
-    deleteFromDocStore?: boolean,
-  ): Promise<void>;
+  abstract deleteRefDoc(refDocId: string): Promise<void>;
 
   /**
    * Alias for asRetriever

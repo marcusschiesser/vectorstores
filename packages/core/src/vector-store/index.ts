@@ -1,4 +1,3 @@
-import { BaseEmbedding, type TextEmbedFunc } from "../embeddings";
 import type { BaseNode, ModalityType } from "../schema";
 
 /**
@@ -22,20 +21,25 @@ export interface VectorStoreQueryResult {
   ids: string[];
 }
 
-export enum VectorStoreQueryMode {
-  DEFAULT = "default",
-  SPARSE = "sparse",
-  HYBRID = "hybrid",
+export const VectorStoreQueryMode = {
+  DEFAULT: "default",
+  SPARSE: "sparse",
+  HYBRID: "hybrid",
   // fit learners
-  SVM = "svm",
-  LOGISTIC_REGRESSION = "logistic_regression",
-  LINEAR_REGRESSION = "linear_regression",
+  SVM: "svm",
+  LOGISTIC_REGRESSION: "logistic_regression",
+  LINEAR_REGRESSION: "linear_regression",
   // maximum marginal relevance
-  MMR = "mmr",
+  MMR: "mmr",
 
   // for Azure AI Search
-  SEMANTIC_HYBRID = "semantic_hybrid",
-}
+  SEMANTIC_HYBRID: "semantic_hybrid",
+
+  BM25: "bm25",
+} as const;
+
+export type VectorStoreQueryMode =
+  (typeof VectorStoreQueryMode)[keyof typeof VectorStoreQueryMode];
 
 export enum FilterOperator {
   EQ = "==", // default operator (string, number)
@@ -83,32 +87,35 @@ export interface VectorStoreInfo {
 }
 
 export interface VectorStoreQuery<T = unknown> {
-  queryEmbedding?: number[];
+  queryEmbedding?: number[] | undefined;
   similarityTopK: number;
   docIds?: string[];
-  queryStr?: string;
+  queryStr?: string | undefined;
   mode: VectorStoreQueryMode;
-  alpha?: number;
+  alpha?: number | undefined;
   filters?: MetadataFilters | undefined;
   mmrThreshold?: number;
   customParams?: T | undefined;
+  /**
+   * Number of results to fetch from each sub-search (vector/BM25) before
+   * combining in hybrid mode. Higher values find more candidates but are slower.
+   * Default: 5 × similarityTopK
+   */
+  hybridPrefetch?: number;
 }
+
+/**
+ * Default multiplier for hybrid search prefetch.
+ * Each sub-search fetches prefetchMultiplier × similarityTopK results.
+ */
+export const DEFAULT_HYBRID_PREFETCH_MULTIPLIER = 5;
 
 // Supported types of vector stores (for each modality)
 export type VectorStoreByType = {
   [P in ModalityType]?: BaseVectorStore;
 };
 
-export type VectorStoreBaseParams = {
-  // @deprecated: use embedFunc instead
-  embeddingModel?: BaseEmbedding | undefined;
-  // @deprecated: use embedFunc instead
-  embedModel?: BaseEmbedding | undefined;
-  embedFunc?: TextEmbedFunc | undefined;
-};
-
 export abstract class BaseVectorStore<Client = unknown, T = unknown> {
-  embedModel: BaseEmbedding;
   abstract storesText: boolean;
   isEmbeddingQuery?: boolean;
   abstract client(): Client;
@@ -119,14 +126,13 @@ export abstract class BaseVectorStore<Client = unknown, T = unknown> {
     options?: object,
   ): Promise<VectorStoreQueryResult>;
 
-  protected constructor(params?: VectorStoreBaseParams) {
-    if (params?.embedFunc) {
-      this.embedModel = new BaseEmbedding({ embedFunc: params.embedFunc });
-    } else {
-      this.embedModel =
-        params?.embedModel ?? params?.embeddingModel ?? new BaseEmbedding();
-    }
-  }
+  /**
+   * Check if any nodes exist for the given document reference ID.
+   * Used for de-duplication during ingestion.
+   * @param refDocId The reference document ID to check
+   * @returns true if any nodes with this ref_doc_id exist
+   */
+  abstract exists(refDocId: string): Promise<boolean>;
 }
 
 export const parsePrimitiveValue = (
@@ -155,5 +161,7 @@ export const parseNumberValue = (value?: MetadataFilterValue): number => {
   return value;
 };
 
+export * from "./bm25.js";
+export * from "./rrf.js";
 export * from "./SimpleVectorStore.js";
 export * from "./utils.js";

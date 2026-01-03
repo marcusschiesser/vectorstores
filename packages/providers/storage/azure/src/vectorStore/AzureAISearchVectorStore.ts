@@ -1,4 +1,8 @@
 import {
+  DefaultAzureCredential,
+  ManagedIdentityCredential,
+} from "@azure/identity";
+import {
   AzureKeyCredential,
   IndexDocumentsBatch,
   KnownAnalyzerNames,
@@ -21,11 +25,6 @@ import {
   type VectorSearch,
   type VectorSearchCompression,
 } from "@azure/search-documents";
-
-import {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-} from "@azure/identity";
 import {
   type BaseNode,
   BaseVectorStore,
@@ -35,9 +34,7 @@ import {
   type MetadataFilters,
   MetadataMode,
   nodeToMetadata,
-  type VectorStoreBaseParams,
   type VectorStoreQuery,
-  VectorStoreQueryMode,
   type VectorStoreQueryResult,
 } from "@vectorstores/core";
 import { consoleLogger, getEnv } from "@vectorstores/env";
@@ -267,11 +264,10 @@ const vectorStore = new AzureAISearchVectorStore({
 const documents = await new SimpleDirectoryReader().loadData(
   "data/paul_graham/",
 );
-const storageContext = await storageContextFromDefaults({ vectorStore });
 
-// Create index from documents with the specified storage context
+// Create index from documents with the specified vector store
 const index = await VectorStoreIndex.fromDocuments(documents, {
-  storageContext,
+  vectorStore,
   docStoreStrategy: DocStoreStrategy.UPSERTS,
 });
 
@@ -309,8 +305,8 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
   ) => T;
   #hiddenFiledKeys: string[] | undefined;
 
-  constructor(options: AzureAISearchOptions<T> & VectorStoreBaseParams) {
-    super(options);
+  constructor(options: AzureAISearchOptions<T>) {
+    super();
 
     // set default values
     options.vectorAlgorithmType ||=
@@ -795,7 +791,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
   }
 
   #buildCredentials(options: AzureAISearchOptions<T>) {
-    let { credential: credential, key, endpoint, indexName } = options;
+    let { credential, key, endpoint, indexName } = options;
 
     // validate and use credential
     if (credential) {
@@ -1267,7 +1263,8 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
       );
 
     switch (query.mode) {
-      case VectorStoreQueryMode.SPARSE:
+      case "sparse":
+      case "bm25":
         azureQueryResultSearch = new AzureQueryResultSearchSparse(
           query,
           this.#fieldMapping,
@@ -1275,7 +1272,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
           this._searchClient,
         );
         break;
-      case VectorStoreQueryMode.HYBRID:
+      case "hybrid":
         azureQueryResultSearch = new AzureQueryResultSearchHybrid(
           query,
           this.#fieldMapping,
@@ -1283,7 +1280,7 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
           this._searchClient,
         );
         break;
-      case VectorStoreQueryMode.SEMANTIC_HYBRID:
+      case "semantic_hybrid":
         azureQueryResultSearch = new AzureQueryResultSearchSemanticHybrid(
           query,
           this.#fieldMapping,
@@ -1295,5 +1292,16 @@ export class AzureAISearchVectorStore<T extends R> extends BaseVectorStore {
 
     // Execute the search and return the result
     return await azureQueryResultSearch.search();
+  }
+
+  async exists(refDocId: string): Promise<boolean> {
+    const results = await this._searchClient!.search("*", {
+      filter: `ref_doc_id eq '${refDocId}'`,
+      top: 1,
+    });
+    for await (const _result of results.results) {
+      return true;
+    }
+    return false;
   }
 }

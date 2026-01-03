@@ -3,7 +3,6 @@ import {
   MetadataMode,
   type NodeWithScore,
   Settings,
-  storageContextFromDefaults,
   VectorStoreIndex,
 } from "@vectorstores/core";
 import { QdrantVectorStore } from "@vectorstores/qdrant";
@@ -49,11 +48,10 @@ async function main() {
     ];
     console.log("Creating QdrantDB vector store");
     const qdrantVs = new QdrantVectorStore({ url: qdrantUrl, collectionName });
-    const ctx = await storageContextFromDefaults({ vectorStore: qdrantVs });
 
     console.log("Embedding documents and adding to index");
     const index = await VectorStoreIndex.fromDocuments(docs, {
-      storageContext: ctx,
+      vectorStore: qdrantVs,
     });
 
     console.log(

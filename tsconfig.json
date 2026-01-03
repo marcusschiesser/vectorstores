@@ -36,9 +36,6 @@
       "path": "./packages/providers/cohere/tsconfig.json"
     },
     {
-      "path": "./packages/providers/retriever/bm25/tsconfig.json"
-    },
-    {
       "path": "./packages/core/tsconfig.json"
     },
     {
@@ -98,6 +95,9 @@
     },
     {
       "path": "./packages/providers/storage/libsql/tsconfig.json"
+    },
+    {
+      "path": "./examples/tsconfig.json"
     }
   ]
 }

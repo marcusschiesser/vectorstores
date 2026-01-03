@@ -2,34 +2,26 @@
 title: Storage
 ---
 
-Storage in vectorstores works automatically once you've configured a
-`StorageContext` object.
+Storage in vectorstores works automatically once you've configured your vector stores.
 
-Per default a local directory is used for storage. Depening on the storage type (i.e. doc stores, index stores or vector stores), you can configure a different persistence layer. 
+Per default a local directory is used for storage. Depending on the storage type (i.e. doc stores or vector stores), you can configure a different persistence layer. 
 Most commonly a vector database is used as vector store. 
 
 
 ## Local Storage
 
-You can configure the `persistDir` to define where to store the data locally.
+You can use `persistDir` to define where to store the data locally.
 
 ```typescript
-import {
-  Document,
-  VectorStoreIndex,
-  storageContextFromDefaults,
-} from "@vectorstores/core";
-
-const storageContext = await storageContextFromDefaults({
-  persistDir: "./storage",
-});
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 
 const document = new Document({ text: "Test Text" });
 const index = await VectorStoreIndex.fromDocuments([document], {
-  storageContext,
+  persistDir: "./storage",
 });
 ```
 
 ## API Reference
 
-- [StorageContext](/api/interfaces/storagecontext)
+- [VectorStoreIndex](/api/classes/vectorstoreindex)
+- [VectorStoreByType](/api/type-aliases/vectorstorebytype)

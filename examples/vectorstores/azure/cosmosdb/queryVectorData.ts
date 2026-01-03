@@ -1,10 +1,6 @@
-import { CosmosClient } from "@azure/cosmos";
 import { DefaultAzureCredential } from "@azure/identity";
 import { AzureCosmosDBNoSQLConfig } from "@vectorstores/azure";
-import {
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
 import * as dotenv from "dotenv";
 
 import { useOpenAIEmbedding } from "../../../shared/utils/embedding";
@@ -56,29 +52,11 @@ async function query() {
     );
   }
 
-  let cosmosClient: CosmosClient;
-  // initialize the cosmos client
-  if (cosmosConnectionString) {
-    cosmosClient = new CosmosClient(cosmosConnectionString);
-  } else {
-    cosmosClient = new CosmosClient({
-      endpoint: cosmosEndpoint,
-      aadCredentials: new DefaultAzureCredential(),
-    });
-  }
-
-  // use Azure CosmosDB as a vectorStore, docStore, and indexStore
-  const { vectorStore, docStore, indexStore } = await initializeStores();
-
-  // Store the embeddings in the CosmosDB container
-  const storageContext = await storageContextFromDefaults({
-    vectorStore,
-    docStore,
-    indexStore,
-  });
+  // use Azure CosmosDB as a vectorStore
+  const { vectorStore } = await initializeStores();
 
   // create an index from the Azure CosmosDB NoSQL Vector Store
-  const index = await VectorStoreIndex.init({ storageContext });
+  const index = await VectorStoreIndex.fromVectorStore(vectorStore);
 
   // create a retriever from the index
   const retriever = index.asRetriever({ similarityTopK: 20 });

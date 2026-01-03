@@ -1,9 +1,10 @@
 import { openai } from "@ai-sdk/openai";
 import { Document, formatLLM, VectorStoreIndex } from "@vectorstores/core";
-import { embedMany, stepCountIs, streamText, tool } from "ai";
+import { stepCountIs, streamText, tool } from "ai";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { embeddings } from "./embeddings";
 
 async function main() {
   const filePath = fileURLToPath(
@@ -13,13 +14,7 @@ async function main() {
   const document = new Document({ text: essay, id_: filePath });
 
   const index = await VectorStoreIndex.fromDocuments([document], {
-    embedFunc: async (input: string[]): Promise<number[][]> => {
-      const { embeddings } = await embedMany({
-        model: openai.embedding("text-embedding-3-small"),
-        values: input,
-      });
-      return embeddings;
-    },
+    embeddings,
   });
   console.log("Successfully created index");
 

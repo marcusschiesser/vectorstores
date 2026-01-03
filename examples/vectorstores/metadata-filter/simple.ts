@@ -1,10 +1,4 @@
-import {
-  Document,
-  Settings,
-  SimpleDocumentStore,
-  VectorStoreIndex,
-  storageContextFromDefaults,
-} from "@vectorstores/core";
+import { Document, Settings, VectorStoreIndex } from "@vectorstores/core";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
 Settings.callbackManager.on("retrieve-end", (event) => {
@@ -36,20 +30,9 @@ async function getDataSource() {
       },
     }),
   ];
-  const storageContext = await storageContextFromDefaults({
+
+  return await VectorStoreIndex.fromDocuments(docs, {
     persistDir: "./cache",
-  });
-  const numberOfDocs = Object.keys(
-    (storageContext.docStore as SimpleDocumentStore).toDict(),
-  ).length;
-  if (numberOfDocs === 0) {
-    // Generate the data source if it's empty
-    return await VectorStoreIndex.fromDocuments(docs, {
-      storageContext,
-    });
-  }
-  return await VectorStoreIndex.init({
-    storageContext,
   });
 }
 

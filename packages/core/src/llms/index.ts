@@ -5,6 +5,7 @@ export type {
   MessageContentFileDetail,
   MessageContentImageDataDetail,
   MessageContentImageDetail,
+  MessageContentImageTypeDetail,
   MessageContentTextDetail,
   MessageContentVideoDetail,
 } from "./type";

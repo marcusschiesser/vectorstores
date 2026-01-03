@@ -1,7 +1,9 @@
-import { Document, VectorStoreQueryMode } from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { PGVectorStore } from "@vectorstores/postgres";
 import dotenv from "dotenv";
 import postgres from "postgres";
+import { getOpenAIEmbedding } from "../../shared/utils/embedding";
+import { formatRetrieverResponse } from "../../shared/utils/format-response";
 
 dotenv.config();
 
@@ -23,23 +25,25 @@ const sql = postgres({
 await sql`CREATE EXTENSION IF NOT EXISTS vector`;
 
 const vectorStore = new PGVectorStore({
-  dimensions: 3,
+  dimensions: 1536,
   client: sql,
 });
 
-await vectorStore.add([
-  new Document({
-    text: "hello, world",
-    embedding: [1, 2, 3],
-  }),
-]);
+const index = await VectorStoreIndex.fromDocuments(
+  [
+    new Document({
+      text: "hello, world",
+    }),
+  ],
+  {
+    vectorStore,
+    embedFunc: getOpenAIEmbedding(),
+  },
+);
 
-const results = await vectorStore.query({
-  mode: VectorStoreQueryMode.DEFAULT,
-  similarityTopK: 1,
-  queryEmbedding: [1, 2, 3],
-});
+const retriever = index.asRetriever({ similarityTopK: 1 });
+const results = await retriever.retrieve({ query: "hello, world" });
 
-console.log("result", results);
+console.log(formatRetrieverResponse(results));
 
 await sql.end();

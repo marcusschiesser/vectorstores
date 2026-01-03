@@ -1,8 +1,4 @@
-import {
-  Document,
-  storageContextFromDefaults,
-  VectorStoreIndex,
-} from "@vectorstores/core";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { SupabaseVectorStore } from "@vectorstores/supabase";
 import { useOpenAIEmbedding } from "../../shared/utils/embedding";
 import { formatRetrieverResponse } from "../../shared/utils/format-response";
@@ -45,14 +41,9 @@ async function main() {
 
   // await vectorStore.delete("fc079c38-2af4-4782-96e4-955c28608fcf");
 
-  // Create storage context with the vector store
-  const storageContext = await storageContextFromDefaults({
-    vectorStore,
-  });
-
   // Create and store embeddings in Supabase
   const index = await VectorStoreIndex.fromDocuments(documents, {
-    storageContext,
+    vectorStore,
   });
 
   // Retrieve from the index
