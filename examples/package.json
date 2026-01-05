@@ -11,6 +11,7 @@
     "use-workspace": "node ../scripts/use-workspace-deps.mjs ./package.json"
   },
   "dependencies": {
+    "@ai-sdk/cohere": "^3.0.2",
     "@ai-sdk/openai": "^3.0.2",
     "@azure/cosmos": "^4.1.1",
     "@azure/identity": "^4.4.1",
