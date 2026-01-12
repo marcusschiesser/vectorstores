@@ -1,0 +1,44 @@
+{
+  "name": "@vectorstores/vercel",
+  "description": "Vercel AI SDK integration for vectorstores",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/schiesser/vectorstores.git",
+    "directory": "packages/providers/vercel"
+  },
+  "scripts": {
+    "build": "bunchee",
+    "dev": "bunchee --watch"
+  },
+  "devDependencies": {
+    "@vectorstores/core": "workspace:*",
+    "@vectorstores/env": "workspace:*",
+    "ai": "^4.0.0",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@vectorstores/core": "workspace:*",
+    "@vectorstores/env": "workspace:*",
+    "ai": "^4.0.0",
+    "zod": "^3.24.0"
+  }
+}

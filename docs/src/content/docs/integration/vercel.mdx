@@ -3,75 +3,111 @@ title: Vercel
 description: Integrate vectorstores with Vercel's AI SDK
 ---
 
-This guide demonstrates how to build an agentic RAG (Retrieval-Augmented Generation) application using vectorstores with Vercel's AI SDK. The example shows how to create a vector store index from documents and use it as a tool within Vercel's streaming text generation.
+This guide demonstrates how to integrate vectorstores with Vercel's AI SDK. The `@vectorstores/vercel` package provides two key utilities:
 
-## Overview
+- **`vercelEmbedding`**: Use any Vercel AI SDK embedding model with vectorstores
+- **`vercelTool`**: Wrap a vectorstores retriever as a Vercel AI SDK tool for agentic workflows
 
-The agentic RAG example combines:
-- **vectorstores** for document indexing and retrieval
-- **Vercel AI SDK** for streaming text generation with tool calling
-- **OpenAI** as the LLM provider
+## Installation
 
-The application allows the LLM to autonomously query your knowledge base by providing it with a retrieval tool, enabling multi-step reasoning and information gathering.
+```bash
+npm install @vectorstores/vercel @vectorstores/core ai
+```
 
-## Complete Example
+## Using vercelEmbedding
 
-Here's the full example code:
+The `vercelEmbedding` function wraps any Vercel AI SDK embedding model to make it compatible with vectorstores:
 
 ```typescript
 import { openai } from "@ai-sdk/openai";
-import { Document, formatLLM, Settings, VectorStoreIndex } from "@vectorstores/core";
-import { stepCountIs, streamText, tool } from "ai";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding } from "@vectorstores/vercel";
+
+// Create a vector index using Vercel AI SDK embeddings
+const index = await VectorStoreIndex.fromDocuments(documents, {
+  embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
+});
+
+// Query the index
+const retriever = index.asRetriever();
+const results = await retriever.retrieve({ query: "What is AI?" });
+```
+
+This works with any Vercel AI SDK compatible embedding provider (OpenAI, Cohere, etc.).
+
+## Using vercelTool
+
+The `vercelTool` function creates a Vercel AI SDK tool from a vectorstores retriever, enabling agentic RAG workflows:
+
+```typescript
+import { openai } from "@ai-sdk/openai";
+import { streamText, stepCountIs } from "ai";
+import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
+
+// Create index and retriever
+const index = await VectorStoreIndex.fromDocuments(documents, {
+  embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
+});
+const retriever = index.asRetriever();
+
+// Use the retriever as a tool in streamText
+const result = streamText({
+  model: openai.chat("gpt-4o-mini"),
+  prompt: "What are the key concepts in AI?",
+  tools: {
+    queryKnowledge: vercelTool({
+      retriever,
+      description: "Search the AI knowledge base for information.",
+    }),
+  },
+  stopWhen: stepCountIs(5),
+});
+
+for await (const textPart of result.textStream) {
+  process.stdout.write(textPart);
+}
+```
+
+### vercelTool Options
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `retriever` | `BaseRetriever` | Yes | The vectorstores retriever to wrap |
+| `description` | `string` | Yes | Description for the LLM to understand when to use the tool |
+| `noResultsMessage` | `string` | No | Message returned when no results are found (default: "No results found in documents.") |
+
+## Complete Agentic RAG Example
+
+Here's a complete example combining both utilities:
+
+```typescript
+import { openai } from "@ai-sdk/openai";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
+import { stepCountIs, streamText } from "ai";
 import fs from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { OpenAI } from "openai";
-import { z } from "zod";
 
 async function main() {
-  // Ensure OpenAI API key is available
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('Error: OpenAI API key not found in environment variables.');
-    return;
-  }
+  // Load document
+  const essay = await fs.readFile("./data/essay.txt", "utf-8");
+  const document = new Document({ text: essay, id_: "essay" });
 
-  // Configure OpenAI embeddings with vectorstores
-   const openaiClient = new OpenAI();
-  Settings.embedFunc = async (input) => {
-    const { data } = await openaiClient.embeddings.create({
-      model: "text-embedding-3-small",
-      input,
-    });
-    return data.map((d) => d.embedding);
-  };
+  // Create index with Vercel AI SDK embeddings
+  const index = await VectorStoreIndex.fromDocuments([document], {
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
+  });
 
-  const filePath = fileURLToPath(
-    new URL("../shared/data/abramov.txt", import.meta.url),
-  );
-  const essay = await fs.readFile(filePath, "utf-8");
-  const document = new Document({ text: essay, id_: filePath });
-
-  const index = await VectorStoreIndex.fromDocuments([document]);
-  console.log("Successfully created index");
-
+  // Create retriever and wrap as tool
   const retriever = index.asRetriever();
+
+  // Stream response with agentic tool calling
   const result = streamText({
-    model: openai("gpt-5.1-mini"),
-    prompt: "Cost of moving cat from Russia to UK?",
+    model: openai.chat("gpt-4o-mini"),
+    prompt: "Summarize the key points from the essay.",
     tools: {
-      queryTool: tool({
-        description:
-          "get information from your knowledge base to answer questions.",
-        inputSchema: z.object({
-          query: z
-            .string()
-            .describe("The query to get information about your documents."),
-        }),
-        execute: async ({ query }) => {
-          return (
-            formatLLM(await retriever.retrieve({ query })) ||
-            "No result found in documents"
-          );
-        },
+      queryKnowledge: vercelTool({
+        retriever,
+        description: "Search the essay for relevant information.",
       }),
     },
     stopWhen: stepCountIs(5),
@@ -85,121 +121,51 @@ async function main() {
 main().catch(console.error);
 ```
 
-## Step-by-Step Explanation
+## Manual Integration (Alternative)
 
-### 1. Setup and Configuration
-
-The example starts by ensuring the OpenAI API key is available and configuring the [embedding model](/modules/embeddings/openai/):
+If you prefer manual integration without the `@vectorstores/vercel` package, you can use the core utilities directly:
 
 ```typescript
-// Ensure OpenAI API key is available
-if (!process.env.OPENAI_API_KEY) {
-  console.error("OpenAI API key not found in environment variables.");
-  return;
-}
+import { openai } from "@ai-sdk/openai";
+import { Document, formatLLM, Settings, VectorStoreIndex } from "@vectorstores/core";
+import { stepCountIs, streamText, tool, embedMany } from "ai";
+import { z } from "zod";
 
-// Configure OpenAI embeddings
-const openaiClient = new OpenAI();
+// Configure embeddings manually
 Settings.embedFunc = async (input) => {
-  const { data } = await openaiClient.embeddings.create({
-    model: "text-embedding-3-small",
-    input,
+  const { embeddings } = await embedMany({
+    model: openai.embedding("text-embedding-3-small"),
+    values: input,
   });
-  return data.map((d) => d.embedding);
+  return embeddings;
 };
-```
-
-### 2. Loading and Indexing Documents
-
-A document is loaded from a file and indexed:
-
-```typescript
-const filePath = fileURLToPath(
-  new URL("../shared/data/abramov.txt", import.meta.url),
-);
-const essay = await fs.readFile(filePath, "utf-8");
-const document = new Document({ text: essay, id_: filePath });
 
 const index = await VectorStoreIndex.fromDocuments([document]);
-```
-
-- The document is read from the filesystem
-- A `Document` object is created with the text content and a unique ID
-- `VectorStoreIndex.fromDocuments()` splits the document into smaller chunks (nodes) and creates a searchable vector index from them
-
-### 3. Creating a Retriever
-
-A retriever is created from the index to enable querying:
-
-```typescript
 const retriever = index.asRetriever();
-```
 
-The retriever can search the indexed documents and return relevant chunks based on semantic similarity.
-
-### 4. Defining the Query Tool
-
-A tool is defined that allows the LLM to query the knowledge base:
-
-```typescript
-queryTool: tool({
-  description: "get information from your knowledge base to answer questions.",
-  inputSchema: z.object({
-    query: z
-      .string()
-      .describe("The query to get information about your documents."),
-  }),
-  execute: async ({ query }) => {
-    return (
-      formatLLM(await retriever.retrieve({ query })) ||
-      "No result found in documents"
-    );
-  },
-}),
-```
-
-Key components:
-- **`description`**: Tells the LLM when and how to use this tool
-- **`inputSchema`**: Defines the tool's input parameters using Zod
-- **`execute`**: The function that runs when the tool is called
-  - Retrieves relevant document chunks using the retriever
-  - Formats the results using `formatLLM()` for LLM consumption
-  - Returns a fallback message if no results are found
-
-### 5. Streaming Text Generation
-
-The `streamText` function generates responses with tool calling capabilities:
-
-```typescript
+// Create tool manually
 const result = streamText({
-  model: openai("gpt-4o"),
-  prompt: "Cost of moving cat from Russia to UK?",
-  tools: { queryTool },
+  model: openai.chat("gpt-4o-mini"),
+  prompt: "Your question here",
+  tools: {
+    queryTool: tool({
+      description: "Search the knowledge base.",
+      parameters: z.object({
+        query: z.string().describe("The search query."),
+      }),
+      execute: async ({ query }) => {
+        return formatLLM(await retriever.retrieve({ query })) || "No results found";
+      },
+    }),
+  },
   stopWhen: stepCountIs(5),
 });
 ```
 
-- **`model`**: Uses OpenAI's GPT-4o model via Vercel's AI SDK
-- **`prompt`**: The user's question
-- **`tools`**: Makes the query tool available to the LLM
-- **`stopWhen: stepCountIs(5)`**: Limits the agent to 5 reasoning steps to prevent infinite loops
-
-### 6. Streaming the Response
-
-The response is streamed to the console:
-
-```typescript
-for await (const textPart of result.textStream) {
-  process.stdout.write(textPart);
-}
-```
-
-This allows the user to see the response as it's generated, providing a better user experience.
-
 ## How It Works
 
 1. The LLM receives the user's question
-2. It decides whether to use the `queryTool` to search the knowledge base
+2. It decides whether to use the tool to search the knowledge base
 3. If it calls the tool, the retriever searches the indexed documents
 4. The retrieved information is formatted and returned to the LLM
 5. The LLM uses this information to generate a response
@@ -208,13 +174,14 @@ This allows the user to see the response as it's generated, providing a better u
 
 ## Key Benefits
 
+- **Simple Integration**: `vercelEmbedding` and `vercelTool` provide one-line integrations
+- **Provider Agnostic**: Works with any Vercel AI SDK compatible provider
 - **Autonomous Information Retrieval**: The LLM decides when to query the knowledge base
 - **Multi-step Reasoning**: Can perform multiple queries to gather comprehensive information
 - **Streaming Responses**: Provides real-time feedback to users
-- **Flexible Tool Usage**: The LLM uses tools only when needed
 
 ## Next Steps
 
-1. Experiment with different retrieval strategies and tool configurations to improve the agent's performance
+1. Experiment with different retrieval strategies and tool configurations
 2. Try using different Vercel AI [model providers](https://sdk.vercel.ai/docs/foundations/providers-and-models)
-
+3. Combine with other vectorstores features like reranking for improved accuracy
