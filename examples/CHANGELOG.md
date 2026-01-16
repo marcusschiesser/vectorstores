@@ -1,5 +1,16 @@
 # @vectorstores/examples
 
+## 0.1.7
+
+### Patch Changes
+
+- 17e6538: Add @vectorstores/vercel package with Vercel AI SDK integration:
+
+  - `vercelEmbedding`: Wrapper to use Vercel AI SDK embedding models with vectorstores
+  - `vercelTool`: Create Vercel AI SDK tools from vectorstores retrievers for agentic RAG workflows
+  - Examples demonstrating both functions
+  - Updated documentation for Vercel integration
+
 ## 0.1.6
 
 ### Patch Changes
