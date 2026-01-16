@@ -1,15 +1,16 @@
 import { cohere } from "@ai-sdk/cohere";
+import { openai } from "@ai-sdk/openai";
 import { Document, MetadataMode, VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding } from "@vectorstores/vercel";
 import { rerank } from "ai";
 import essay from "../shared/data/essay";
 import { formatRetrieverResponse } from "../shared/utils/format-response";
-import { embeddings } from "./embeddings";
 
 async function main() {
   const document = new Document({ text: essay });
 
   const index = await VectorStoreIndex.fromDocuments([document], {
-    embeddings,
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
   });
   console.log("Successfully created index");
 

@@ -1,13 +1,13 @@
 import { openai } from "@ai-sdk/openai";
-import { formatLLM, VectorStoreIndex } from "@vectorstores/core";
+import { VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
 import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
-import { embeddings } from "./embeddings";
 
 async function main() {
   // Create an empty vector store index for storing memories
   const index = await VectorStoreIndex.init({
-    embeddings,
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
   });
   console.log("Successfully created memory index");
 
@@ -41,7 +41,7 @@ async function main() {
                 "The information to remember (e.g., user preferences, facts, context).",
               ),
           }),
-          execute: async ({ memory }) => {
+          execute: async ({ memory }: { memory: string }) => {
             // Add the memory to the vector store with timestamp metadata
             await index.insertText(memory, {
               timestamp: new Date().toISOString(),
@@ -50,18 +50,11 @@ async function main() {
             return `Memory stored: ${memory}`;
           },
         }),
-        retrieveMemories: tool({
+        retrieveMemories: vercelTool({
+          retriever,
           description:
             "Retrieve relevant memories from long-term storage based on a query. Use this to recall information about the user.",
-          inputSchema: z.object({
-            query: z.string(),
-          }),
-          execute: async ({ query }) => {
-            const results = await retriever.retrieve({ query });
-            return (
-              formatLLM(results) || "No relevant memories found in storage"
-            );
-          },
+          noResultsMessage: "No relevant memories found in storage",
         }),
       },
       stopWhen: stepCountIs(5),

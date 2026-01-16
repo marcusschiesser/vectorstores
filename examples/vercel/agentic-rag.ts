@@ -1,10 +1,9 @@
 import { openai } from "@ai-sdk/openai";
-import { Document, formatLLM, VectorStoreIndex } from "@vectorstores/core";
-import { stepCountIs, streamText, tool } from "ai";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
+import { stepCountIs, streamText } from "ai";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { z } from "zod";
-import { embeddings } from "./embeddings";
 
 async function main() {
   const filePath = fileURLToPath(
@@ -14,7 +13,7 @@ async function main() {
   const document = new Document({ text: essay, id_: filePath });
 
   const index = await VectorStoreIndex.fromDocuments([document], {
-    embeddings,
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
   });
   console.log("Successfully created index");
 
@@ -23,20 +22,10 @@ async function main() {
     model: openai("gpt-4o"),
     prompt: "Cost of moving cat from Russia to UK?",
     tools: {
-      queryTool: tool({
+      queryTool: vercelTool({
+        retriever,
         description:
           "get information from your knowledge base to answer questions.",
-        inputSchema: z.object({
-          query: z
-            .string()
-            .describe("The query to get information about your documents."),
-        }),
-        execute: async ({ query }) => {
-          return (
-            formatLLM(await retriever.retrieve({ query })) ||
-            "No result found in documents"
-          );
-        },
       }),
     },
     stopWhen: stepCountIs(5),
