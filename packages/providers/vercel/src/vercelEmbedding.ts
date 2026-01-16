@@ -22,9 +22,7 @@ import { embedMany } from "ai";
  * });
  * ```
  */
-export function vercelEmbedding<T extends string>(
-  model: EmbeddingModel<T>,
-): TextEmbedFunc {
+export function vercelEmbedding(model: EmbeddingModel): TextEmbedFunc {
   return async (input: string[]): Promise<number[][]> => {
     const { embeddings } = await embedMany({
       model,

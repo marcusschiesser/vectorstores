@@ -62,7 +62,7 @@ export function vercelTool(options: VercelToolOptions) {
 
   return tool({
     description,
-    parameters: z.object({
+    inputSchema: z.object({
       query: z
         .string()
         .describe("The search query to find relevant information."),
