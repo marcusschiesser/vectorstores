@@ -212,6 +212,9 @@ importers:
       '@vectorstores/upstash':
         specifier: latest
         version: link:../packages/providers/storage/upstash
+      '@vectorstores/vercel':
+        specifier: latest
+        version: link:../packages/providers/vercel
       '@vectorstores/weaviate':
         specifier: latest
         version: link:../packages/providers/storage/weaviate
@@ -688,6 +691,21 @@ importers:
       vitest:
         specifier: ^3.2.0
         version: 3.2.0(@edge-runtime/vm@5.0.0)(@types/debug@4.1.12)(@types/node@24.0.13)(happy-dom@17.4.4)(jiti@2.4.2)(lightningcss@1.29.3)(msw@2.7.4(@types/node@24.0.13)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.2)
+
+  packages/providers/vercel:
+    devDependencies:
+      '@vectorstores/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@vectorstores/env':
+        specifier: workspace:*
+        version: link:../../env
+      ai:
+        specifier: ^6.0.5
+        version: 6.0.5(zod@4.2.1)
+      zod:
+        specifier: ^4.1.5
+        version: 4.2.1
 
   packages/readers:
     dependencies:
@@ -1635,6 +1653,7 @@ packages:
 
   '@finom/zod-to-json-schema@3.24.11':
     resolution: {integrity: sha512-fL656yBPiWebtfGItvtXLWrFNGlF1NcDFS0WdMQXMs9LluVg0CfT5E2oXYp0pidl0vVG53XkW55ysijNkU5/hA==}
+    deprecated: 'Use https://www.npmjs.com/package/zod-v3-to-json-schema instead. See issue comment for details: https://github.com/StefanTerdell/zod-to-json-schema/issues/178#issuecomment-3533122539'
     peerDependencies:
       zod: ^4.0.14
 

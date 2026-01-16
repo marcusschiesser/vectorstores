@@ -41,6 +41,7 @@
     "@vectorstores/readers": "latest",
     "@vectorstores/supabase": "latest",
     "@vectorstores/upstash": "latest",
+    "@vectorstores/vercel": "latest",
     "@vectorstores/weaviate": "latest",
     "@vercel/postgres": "^0.10.0",
     "ai": "^6.0.5",
