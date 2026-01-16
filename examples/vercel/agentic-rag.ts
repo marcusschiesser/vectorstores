@@ -19,7 +19,7 @@ async function main() {
 
   const retriever = index.asRetriever();
   const result = streamText({
-    model: openai("gpt-4o"),
+    model: openai("gpt-5-mini"),
     prompt: "Cost of moving cat from Russia to UK?",
     tools: {
       queryTool: vercelTool({

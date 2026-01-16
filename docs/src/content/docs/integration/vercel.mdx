@@ -11,7 +11,7 @@ This guide demonstrates how to integrate vectorstores with Vercel's AI SDK. The 
 ## Installation
 
 ```bash
-npm install @vectorstores/vercel @vectorstores/core ai
+npm install @vectorstores/vercel @vectorstores/core ai @ai-sdk/openai
 ```
 
 ## Using vercelEmbedding
@@ -41,8 +41,9 @@ The `vercelTool` function creates a Vercel AI SDK tool from a vectorstores retri
 
 ```typescript
 import { openai } from "@ai-sdk/openai";
-import { streamText, stepCountIs } from "ai";
+import { Document, VectorStoreIndex } from "@vectorstores/core";
 import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
+import { stepCountIs, streamText } from "ai";
 
 // Create index and retriever
 const index = await VectorStoreIndex.fromDocuments(documents, {
@@ -52,7 +53,7 @@ const retriever = index.asRetriever();
 
 // Use the retriever as a tool in streamText
 const result = streamText({
-  model: openai.chat("gpt-4o-mini"),
+  model: openai("gpt-5-mini"),
   prompt: "What are the key concepts in AI?",
   tools: {
     queryKnowledge: vercelTool({
@@ -76,9 +77,9 @@ for await (const textPart of result.textStream) {
 | `description` | `string` | Yes | Description for the LLM to understand when to use the tool |
 | `noResultsMessage` | `string` | No | Message returned when no results are found (default: "No results found in documents.") |
 
-## Complete Agentic RAG Example
+## Agentic RAG Example
 
-Here's a complete example combining both utilities:
+Here's a complete example showing how to use `vercelEmbedding` and `vercelTool` together:
 
 ```typescript
 import { openai } from "@ai-sdk/openai";
@@ -97,17 +98,15 @@ async function main() {
     embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
   });
 
-  // Create retriever and wrap as tool
+  // Create retriever from index
   const retriever = index.asRetriever();
-
-  // Stream response with agentic tool calling
   const result = streamText({
-    model: openai.chat("gpt-4o-mini"),
-    prompt: "Summarize the key points from the essay.",
+    model: openai("gpt-5-mini"),
+    prompt: "Cost of moving cat from Russia to UK?",
     tools: {
-      queryKnowledge: vercelTool({
+      queryTool: vercelTool({
         retriever,
-        description: "Search the essay for relevant information.",
+        description: "get information from your knowledge base to answer questions.",
       }),
     },
     stopWhen: stepCountIs(5),
@@ -121,67 +120,117 @@ async function main() {
 main().catch(console.error);
 ```
 
-## Manual Integration (Alternative)
+### How Agentic RAG Works
 
-If you prefer manual integration without the `@vectorstores/vercel` package, you can use the core utilities directly:
-
-```typescript
-import { openai } from "@ai-sdk/openai";
-import { Document, formatLLM, Settings, VectorStoreIndex } from "@vectorstores/core";
-import { stepCountIs, streamText, tool, embedMany } from "ai";
-import { z } from "zod";
-
-// Configure embeddings manually
-Settings.embedFunc = async (input) => {
-  const { embeddings } = await embedMany({
-    model: openai.embedding("text-embedding-3-small"),
-    values: input,
-  });
-  return embeddings;
-};
-
-const index = await VectorStoreIndex.fromDocuments([document]);
-const retriever = index.asRetriever();
-
-// Create tool manually
-const result = streamText({
-  model: openai.chat("gpt-4o-mini"),
-  prompt: "Your question here",
-  tools: {
-    queryTool: tool({
-      description: "Search the knowledge base.",
-      parameters: z.object({
-        query: z.string().describe("The search query."),
-      }),
-      execute: async ({ query }) => {
-        return formatLLM(await retriever.retrieve({ query })) || "No results found";
-      },
-    }),
-  },
-  stopWhen: stepCountIs(5),
-});
-```
-
-## How It Works
+The agentic RAG pattern uses `vercelTool` to give the LLM autonomous access to your knowledge base:
 
 1. The LLM receives the user's question
-2. It decides whether to use the tool to search the knowledge base
+2. It decides whether to use the `vercelTool` to search the knowledge base
 3. If it calls the tool, the retriever searches the indexed documents
 4. The retrieved information is formatted and returned to the LLM
 5. The LLM uses this information to generate a response
-6. The process can repeat for multi-step reasoning (up to 5 steps)
+6. The process can repeat for multi-step reasoning (limited by `stepCountIs`)
 7. The final response is streamed to the user
 
-## Key Benefits
+## Agent Memory Example
 
-- **Simple Integration**: `vercelEmbedding` and `vercelTool` provide one-line integrations
-- **Provider Agnostic**: Works with any Vercel AI SDK compatible provider
-- **Autonomous Information Retrieval**: The LLM decides when to query the knowledge base
-- **Multi-step Reasoning**: Can perform multiple queries to gather comprehensive information
-- **Streaming Responses**: Provides real-time feedback to users
+This example demonstrates building an agent with long-term memory using vectorstores. The agent can store and retrieve memories about the user:
+
+```typescript
+import { openai } from "@ai-sdk/openai";
+import { VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding, vercelTool } from "@vectorstores/vercel";
+import { stepCountIs, streamText, tool } from "ai";
+import { z } from "zod";
+
+async function main() {
+  // Create an empty vector store index for storing memories
+  const index = await VectorStoreIndex.init({
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
+  });
+
+  const retriever = index.asRetriever({ similarityTopK: 3 });
+
+  const result = streamText({
+    model: openai("gpt-5-mini"),
+    system: "You are a helpful assistant that can store and retrieve memories about the user.",
+    prompt: "My name is Alice and I love hiking in the mountains.",
+    tools: {
+      addMemory: tool({
+        description: "Store important information about the user in long-term memory.",
+        inputSchema: z.object({
+          memory: z.string().describe("The information to remember."),
+        }),
+        execute: async ({ memory }: { memory: string }) => {
+          await index.insertText(memory, {
+            timestamp: new Date().toISOString(),
+          });
+          return `Memory stored: ${memory}`;
+        },
+      }),
+      retrieveMemories: vercelTool({
+        retriever,
+        description: "Retrieve relevant memories from long-term storage based on a query.",
+        noResultsMessage: "No relevant memories found in storage",
+      }),
+    },
+    stopWhen: stepCountIs(5),
+  });
+
+  for await (const textPart of result.textStream) {
+    process.stdout.write(textPart);
+  }
+}
+
+main().catch(console.error);
+```
+
+## Reranking with Cohere
+
+Combine vectorstores retrieval with Vercel AI SDK's reranking for improved accuracy:
+
+```typescript
+import { cohere } from "@ai-sdk/cohere";
+import { openai } from "@ai-sdk/openai";
+import { Document, MetadataMode, VectorStoreIndex } from "@vectorstores/core";
+import { vercelEmbedding } from "@vectorstores/vercel";
+import { rerank } from "ai";
+
+async function main() {
+  const document = new Document({ text: essay });
+
+  const index = await VectorStoreIndex.fromDocuments([document], {
+    embedFunc: vercelEmbedding(openai.embedding("text-embedding-3-small")),
+  });
+
+  const retriever = index.asRetriever({ similarityTopK: 5 });
+  const query = "What did the author do growing up?";
+
+  // Retrieve nodes
+  const nodes = await retriever.retrieve({ query });
+
+  // Rerank using Vercel AI SDK
+  const { ranking } = await rerank({
+    model: cohere.reranking("rerank-v3.5"),
+    query,
+    documents: nodes.map((n) => n.node.getContent(MetadataMode.ALL)),
+    topN: 2,
+  });
+
+  // Map reranked results back to NodeWithScore format
+  const rerankedNodes = ranking.map((r) => ({
+    node: nodes[r.originalIndex].node,
+    score: r.score,
+  }));
+
+  console.log("Reranked results:", rerankedNodes);
+}
+
+main().catch(console.error);
+```
+
 
 ## Next Steps
 
 1. Experiment with different retrieval strategies and tool configurations
 2. Try using different Vercel AI [model providers](https://sdk.vercel.ai/docs/foundations/providers-and-models)
-3. Combine with other vectorstores features like reranking for improved accuracy
