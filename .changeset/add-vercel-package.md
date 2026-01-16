@@ -1,5 +1,5 @@
 ---
-"@vectorstores/vercel": minor
+"@vectorstores/vercel": patch
 "@vectorstores/examples": patch
 ---
 

@@ -29,7 +29,7 @@
   "repository": {
     "type": "git",
     "directory": "packages/core",
-    "url": "git+https://github.com/schiesser/vectorstores.git"
+    "url": "git+https://github.com/marcusschiesser/vectorstores.git"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^4.0.4",
