@@ -27,6 +27,7 @@
     "@vectorstores/core": "latest",
     "@vectorstores/discord": "latest",
     "@vectorstores/elastic-search": "latest",
+    "@vectorstores/endee": "latest",
     "@vectorstores/env": "latest",
     "@vectorstores/excel": "latest",
     "@vectorstores/firestore": "latest",
