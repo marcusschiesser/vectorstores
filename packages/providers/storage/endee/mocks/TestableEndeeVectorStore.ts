@@ -12,7 +12,7 @@ export class TestableEndeeVectorStore extends EndeeVectorStore {
   constructor(client?: Endee) {
     super({
       indexName: "test-index",
-      client: client,
+      ...(client && { client }),
       url: "http://localhost:8080/api/v1",
       batchSize: 100,
       dimension: 128,
@@ -30,8 +30,12 @@ export class TestableEndeeVectorStore extends EndeeVectorStore {
     filters?: Parameters<EndeeVectorStore["query"]>[0]["filters"],
     docIds?: string[],
   ): Array<Record<string, unknown>> {
-    return (
-      this as unknown as { buildEndeeFilter: typeof this.testBuildEndeeFilter }
-    ).buildEndeeFilter(filters, docIds);
+    const self = this as unknown as {
+      buildEndeeFilter: (
+        filters?: Parameters<EndeeVectorStore["query"]>[0]["filters"],
+        docIds?: string[],
+      ) => Array<Record<string, unknown>>;
+    };
+    return self.buildEndeeFilter(filters, docIds);
   }
 }

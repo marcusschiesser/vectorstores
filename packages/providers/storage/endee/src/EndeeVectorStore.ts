@@ -161,7 +161,7 @@ export class EndeeVectorStore extends BaseVectorStore<
       const createParams: {
         name: string;
         dimension: number;
-        spaceType: string;
+        spaceType: "cosine" | "l2" | "ip";
         precision: Precision;
         sparseDimension?: number;
         M?: number;
